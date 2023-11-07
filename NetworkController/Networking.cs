@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Diagnostics;
+using System.Net;
 using System.Net.Sockets;
 
 namespace NetworkUtil;
@@ -46,18 +47,18 @@ public static class Networking
     private static void AcceptNewClient(IAsyncResult ar)
     {
         TcpListener temp = (TcpListener)ar.AsyncState!;
-        Action<SocketState> state = (Action<SocketState>)ar.AsyncState!;
+        Action<SocketState> toCall = (Action<SocketState>)ar.AsyncState!;
         Socket s = temp.EndAcceptSocket(ar);
 
         try
         {
-            SocketState socketState = new SocketState(state, s);
-            state(socketState);
-            temp.BeginAcceptSocket(AcceptNewClient, state);
+            SocketState socketState = new SocketState(toCall, s);
+            toCall(socketState);
+            temp.BeginAcceptSocket(AcceptNewClient, toCall);
         }
         catch
         {
-            state(new SocketState(state, "Error"));
+            toCall(new SocketState(toCall, "ACCEPT NEW CLIENT ERROR"));
         }
     }
 
@@ -91,9 +92,6 @@ public static class Networking
     /// <param name="port">The port on which the server is listening</param>
     public static void ConnectToServer(Action<SocketState> toCall, string hostName, int port)
     {
-        // TODO: This method is incomplete, but contains a starting point 
-        //       for decoding a host address
-
         // Establish the remote endpoint for the socket.
         IPHostEntry ipHostInfo;
         IPAddress ipAddress = IPAddress.None;
@@ -113,7 +111,7 @@ public static class Networking
             // Didn't find any IPV4 addresses
             if (!foundIPV4)
             {
-                // TODO: Indicate an error to the user, as specified in the documentation
+                toCall(new SocketState(toCall, "Didn't find any IPV4 addresses"));
             }
         }
         catch (Exception)
@@ -125,7 +123,7 @@ public static class Networking
             }
             catch (Exception)
             {
-                // TODO: Indicate an error to the user, as specified in the documentation
+                toCall(new SocketState(toCall, "Invalid host name"));
             }
         }
 
@@ -138,6 +136,16 @@ public static class Networking
         socket.NoDelay = true;
 
         // TODO: Finish the remainder of the connection process as specified.
+        try
+        {
+            SocketState state = new SocketState(toCall, socket);
+            toCall(state);
+            state.TheSocket.BeginConnect(ipAddress, port, ConnectedCallback, state);
+        }
+        catch
+        {
+            toCall(new SocketState(toCall, "CONNECT TO SERVER ERROR"));
+        }
     }
 
     /// <summary>
@@ -155,7 +163,18 @@ public static class Networking
     /// <param name="ar">The object asynchronously passed via BeginConnect</param>
     private static void ConnectedCallback(IAsyncResult ar)
     {
-        throw new NotImplementedException();
+        Action<SocketState> toCall = (Action<SocketState>)ar.AsyncState!;
+        SocketState state = (SocketState)ar.AsyncState!;
+        state.TheSocket.EndConnect(ar);
+
+        try
+        {
+            toCall(state);
+        }
+        catch
+        {
+            toCall(new SocketState(toCall, "CONNECTED CALLBACK ERROR"));
+        }
     }
 
 
