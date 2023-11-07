@@ -1,7 +1,5 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
-using System.Text;
 
 namespace NetworkUtil;
 
@@ -48,11 +46,19 @@ public static class Networking
     private static void AcceptNewClient(IAsyncResult ar)
     {
         TcpListener temp = (TcpListener)ar.AsyncState!;
-        Socket s = temp.EndAcceptSocket(ar);
         Action<SocketState> state = (Action<SocketState>)ar.AsyncState!;
-        SocketState socketState = new SocketState(state, s);
+        Socket s = temp.EndAcceptSocket(ar);
 
-
+        try
+        {
+            SocketState socketState = new SocketState(state, s);
+            state(socketState);
+            temp.BeginAcceptSocket(AcceptNewClient, state);
+        }
+        catch
+        {
+            state(new SocketState(state, "Error"));
+        }
     }
 
     /// <summary>
@@ -60,7 +66,7 @@ public static class Networking
     /// </summary>
     public static void StopServer(TcpListener listener)
     {
-        throw new NotImplementedException();
+        listener.Stop();
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////
