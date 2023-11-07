@@ -20,7 +20,11 @@ public static class Networking
     /// <param name="port">The the port to listen on</param>
     public static TcpListener StartServer(Action<SocketState> toCall, int port)
     {
-        throw new NotImplementedException();
+        TcpListener listener = new TcpListener(IPAddress.Any, port);
+        listener.Start();
+        listener.BeginAcceptSocket(AcceptNewClient, toCall);
+
+        return listener;
     }
 
     /// <summary>
@@ -43,7 +47,12 @@ public static class Networking
     /// 1) a delegate so the user can take action (a SocketState Action), and 2) the TcpListener</param>
     private static void AcceptNewClient(IAsyncResult ar)
     {
-        throw new NotImplementedException();
+        TcpListener temp = (TcpListener)ar.AsyncState!;
+        Socket s = temp.EndAcceptSocket(ar);
+        Action<SocketState> state = (Action<SocketState>)ar.AsyncState!;
+        SocketState socketState = new SocketState(state, s);
+
+
     }
 
     /// <summary>
