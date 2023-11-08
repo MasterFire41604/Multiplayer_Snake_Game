@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 
 namespace NetworkUtil;
 
@@ -20,8 +21,9 @@ public static class Networking
     public static TcpListener StartServer(Action<SocketState> toCall, int port)
     {
         TcpListener listener = new TcpListener(IPAddress.Any, port);
+        Tuple<Action<SocketState>, TcpListener> actionListenerTuple = new(toCall, listener);
         listener.Start();
-        listener.BeginAcceptSocket(AcceptNewClient, toCall);
+        listener.BeginAcceptSocket(AcceptNewClient, actionListenerTuple);
 
         return listener;
     }
@@ -46,8 +48,9 @@ public static class Networking
     /// 1) a delegate so the user can take action (a SocketState Action), and 2) the TcpListener</param>
     private static void AcceptNewClient(IAsyncResult ar)
     {
-        TcpListener temp = (TcpListener)ar.AsyncState!;
-        Action<SocketState> toCall = (Action<SocketState>)ar.AsyncState!;
+        Tuple<Action<SocketState>, TcpListener> tuple = (Tuple<Action<SocketState>, TcpListener>)ar.AsyncState!;
+        Action<SocketState> toCall = tuple.Item1;
+        TcpListener temp = tuple.Item2;
         Socket s = temp.EndAcceptSocket(ar);
 
         try
@@ -140,7 +143,12 @@ public static class Networking
         {
             SocketState state = new SocketState(toCall, socket);
             toCall(state);
-            state.TheSocket.BeginConnect(ipAddress, port, ConnectedCallback, state);
+            IAsyncResult result = state.TheSocket.BeginConnect(ipAddress, port, ConnectedCallback, state);
+            bool success = result.AsyncWaitHandle.WaitOne(3000, true);
+            if (!success) 
+            {
+                throw new Exception();
+            }
         }
         catch
         {
@@ -163,8 +171,8 @@ public static class Networking
     /// <param name="ar">The object asynchronously passed via BeginConnect</param>
     private static void ConnectedCallback(IAsyncResult ar)
     {
-        Action<SocketState> toCall = (Action<SocketState>)ar.AsyncState!;
         SocketState state = (SocketState)ar.AsyncState!;
+        Action<SocketState>  toCall = state.OnNetworkAction;
         state.TheSocket.EndConnect(ar);
 
         try
@@ -195,7 +203,15 @@ public static class Networking
     /// <param name="state">The SocketState to begin receiving</param>
     public static void GetData(SocketState state)
     {
-        throw new NotImplementedException();
+        try
+        {
+            state.TheSocket.BeginReceive(state.buffer, 0, state.buffer.Length, SocketFlags.None, ReceiveCallback, state);
+        }
+        catch
+        {
+            state = new SocketState(state.OnNetworkAction, "GET DATA ERROR");
+            state.OnNetworkAction(state);
+        }
     }
 
     /// <summary>
@@ -217,7 +233,23 @@ public static class Networking
     /// </param>
     private static void ReceiveCallback(IAsyncResult ar)
     {
-        throw new NotImplementedException();
+        SocketState state = (SocketState)ar.AsyncState!;
+        Action<SocketState> toCall = state.OnNetworkAction;
+
+        try
+        {
+            int numBytes = state.TheSocket.EndReceive(ar);
+            string data = Encoding.UTF8.GetString(state.buffer, 0, numBytes);
+
+            // Buffer the data received (we may not have a full message yet)
+            state.data.Append(data);
+
+            toCall(state);
+        }
+        catch
+        {
+            toCall(new SocketState(toCall, "RECEIVE CALLBACK ERROR"));
+        }
     }
 
     /// <summary>
@@ -232,7 +264,17 @@ public static class Networking
     /// <returns>True if the send process was started, false if an error occurs or the socket is already closed</returns>
     public static bool Send(Socket socket, string data)
     {
-        throw new NotImplementedException();
+        try
+        {
+            byte[] messageBytes = Encoding.UTF8.GetBytes(data);
+            socket.BeginSend(messageBytes, 0, messageBytes.Length, SocketFlags.None, SendCallback, socket);
+            return true;
+        }
+        catch
+        {
+            socket.Close();
+            return false;
+        }
     }
 
     /// <summary>
@@ -248,7 +290,9 @@ public static class Networking
     /// </param>
     private static void SendCallback(IAsyncResult ar)
     {
-        throw new NotImplementedException();
+        Socket socket = (Socket)ar.AsyncState!;
+        socket.EndSend(ar);
+        
     }
 
 
@@ -265,7 +309,17 @@ public static class Networking
     /// <returns>True if the send process was started, false if an error occurs or the socket is already closed</returns>
     public static bool SendAndClose(Socket socket, string data)
     {
-        throw new NotImplementedException();
+        try
+        {
+            byte[] messageBytes = Encoding.UTF8.GetBytes(data);
+            socket.BeginSend(messageBytes, 0, messageBytes.Length, SocketFlags.None, SendAndCloseCallback, socket);
+            return true;
+        }
+        catch
+        {
+            socket.Close();
+            return false;
+        }
     }
 
     /// <summary>
@@ -283,6 +337,8 @@ public static class Networking
     /// </param>
     private static void SendAndCloseCallback(IAsyncResult ar)
     {
-        throw new NotImplementedException();
+        Socket socket = (Socket)ar.AsyncState!;
+        socket.EndSend(ar);
+        socket.Close();
     }
 }
