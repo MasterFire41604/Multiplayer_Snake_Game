@@ -138,17 +138,16 @@ public static class Networking
         // game like ours will be 
         socket.NoDelay = true;
 
-        // TODO: Finish the remainder of the connection process as specified.
         try
         {
             SocketState state = new SocketState(toCall, socket);
-            toCall(state);
             IAsyncResult result = state.TheSocket.BeginConnect(ipAddress, port, ConnectedCallback, state);
             bool success = result.AsyncWaitHandle.WaitOne(3000, true);
             if (!success) 
             {
                 throw new Exception();
             }
+            toCall(state);
         }
         catch
         {
