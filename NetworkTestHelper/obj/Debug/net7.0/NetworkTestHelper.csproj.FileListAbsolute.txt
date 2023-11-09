@@ -1,0 +1,15 @@
+C:\Users\isaac\source\repos\uofu-cs3500-fall23\game-insert_name_here_game\PS7\NetworkTestHelper\bin\Debug\net7.0\NetworkTestHelper.deps.json
+C:\Users\isaac\source\repos\uofu-cs3500-fall23\game-insert_name_here_game\PS7\NetworkTestHelper\bin\Debug\net7.0\NetworkTestHelper.dll
+C:\Users\isaac\source\repos\uofu-cs3500-fall23\game-insert_name_here_game\PS7\NetworkTestHelper\bin\Debug\net7.0\NetworkTestHelper.pdb
+C:\Users\isaac\source\repos\uofu-cs3500-fall23\game-insert_name_here_game\PS7\NetworkTestHelper\bin\Debug\net7.0\NetworkController.dll
+C:\Users\isaac\source\repos\uofu-cs3500-fall23\game-insert_name_here_game\PS7\NetworkTestHelper\bin\Debug\net7.0\NetworkController.pdb
+C:\Users\isaac\source\repos\uofu-cs3500-fall23\game-insert_name_here_game\PS7\NetworkTestHelper\obj\Debug\net7.0\NetworkTestHelper.csproj.AssemblyReference.cache
+C:\Users\isaac\source\repos\uofu-cs3500-fall23\game-insert_name_here_game\PS7\NetworkTestHelper\obj\Debug\net7.0\NetworkTestHelper.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\isaac\source\repos\uofu-cs3500-fall23\game-insert_name_here_game\PS7\NetworkTestHelper\obj\Debug\net7.0\NetworkTestHelper.AssemblyInfoInputs.cache
+C:\Users\isaac\source\repos\uofu-cs3500-fall23\game-insert_name_here_game\PS7\NetworkTestHelper\obj\Debug\net7.0\NetworkTestHelper.AssemblyInfo.cs
+C:\Users\isaac\source\repos\uofu-cs3500-fall23\game-insert_name_here_game\PS7\NetworkTestHelper\obj\Debug\net7.0\NetworkTestHelper.csproj.CoreCompileInputs.cache
+C:\Users\isaac\source\repos\uofu-cs3500-fall23\game-insert_name_here_game\PS7\NetworkTestHelper\obj\Debug\net7.0\NetworkTestHelper.csproj.CopyComplete
+C:\Users\isaac\source\repos\uofu-cs3500-fall23\game-insert_name_here_game\PS7\NetworkTestHelper\obj\Debug\net7.0\NetworkTestHelper.dll
+C:\Users\isaac\source\repos\uofu-cs3500-fall23\game-insert_name_here_game\PS7\NetworkTestHelper\obj\Debug\net7.0\refint\NetworkTestHelper.dll
+C:\Users\isaac\source\repos\uofu-cs3500-fall23\game-insert_name_here_game\PS7\NetworkTestHelper\obj\Debug\net7.0\NetworkTestHelper.pdb
+C:\Users\isaac\source\repos\uofu-cs3500-fall23\game-insert_name_here_game\PS7\NetworkTestHelper\obj\Debug\net7.0\ref\NetworkTestHelper.dll
