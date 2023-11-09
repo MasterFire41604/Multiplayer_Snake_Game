@@ -61,7 +61,7 @@ public static class Networking
         }
         catch
         {
-            toCall(new SocketState(toCall, "ACCEPT NEW CLIENT ERROR"));
+            toCall(new SocketState(toCall, "The server could not connect the client"));
         }
     }
 
@@ -150,7 +150,7 @@ public static class Networking
         }
         catch
         {
-            toCall(new SocketState(toCall, "CONNECT TO SERVER ERROR"));
+            toCall(new SocketState(toCall, "Could not connect the client to the server"));
         }
     }
 
@@ -180,7 +180,7 @@ public static class Networking
         catch
         {
             state.ErrorOccurred = true;
-            state.ErrorMessage = "CONNECTED CALLBACK ERROR";
+            state.ErrorMessage = "Could not finish connecting the client to the server";
             toCall(state);
         }
     }
@@ -211,7 +211,7 @@ public static class Networking
         {
 
             state.ErrorOccurred = true;
-            state.ErrorMessage = "GET DATA ERROR";
+            state.ErrorMessage = "Could not retrieve the data";
             state.OnNetworkAction(state);
         }
     }
@@ -251,7 +251,7 @@ public static class Networking
         catch
         {
             state.ErrorOccurred = true;
-            state.ErrorMessage = "RECIEVE CALLBACK ERROR";
+            state.ErrorMessage = "Could not finish receiving the data";
             toCall(state);
         }
     }
