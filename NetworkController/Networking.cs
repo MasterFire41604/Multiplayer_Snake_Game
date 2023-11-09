@@ -51,10 +51,10 @@ public static class Networking
         Tuple<Action<SocketState>, TcpListener> actionListenerTuple = (Tuple<Action<SocketState>, TcpListener>)ar.AsyncState!;
         Action<SocketState> toCall = actionListenerTuple.Item1;
         TcpListener temp = actionListenerTuple.Item2;
-        Socket s = temp.EndAcceptSocket(ar);
 
         try
         {
+            Socket s = temp.EndAcceptSocket(ar);
             SocketState socketState = new SocketState(toCall, s);
             toCall(socketState);
             temp.BeginAcceptSocket(AcceptNewClient, actionListenerTuple);
