@@ -48,16 +48,16 @@ public static class Networking
     /// 1) a delegate so the user can take action (a SocketState Action), and 2) the TcpListener</param>
     private static void AcceptNewClient(IAsyncResult ar)
     {
-        Tuple<Action<SocketState>, TcpListener> tuple = (Tuple<Action<SocketState>, TcpListener>)ar.AsyncState!;
-        Action<SocketState> toCall = tuple.Item1;
-        TcpListener temp = tuple.Item2;
+        Tuple<Action<SocketState>, TcpListener> actionListenerTuple = (Tuple<Action<SocketState>, TcpListener>)ar.AsyncState!;
+        Action<SocketState> toCall = actionListenerTuple.Item1;
+        TcpListener temp = actionListenerTuple.Item2;
         Socket s = temp.EndAcceptSocket(ar);
 
         try
         {
             SocketState socketState = new SocketState(toCall, s);
             toCall(socketState);
-            temp.BeginAcceptSocket(AcceptNewClient, toCall);
+            temp.BeginAcceptSocket(AcceptNewClient, actionListenerTuple);
         }
         catch
         {
@@ -173,10 +173,10 @@ public static class Networking
     {
         SocketState state = (SocketState)ar.AsyncState!;
         Action<SocketState>  toCall = state.OnNetworkAction;
-        state.TheSocket.EndConnect(ar);
 
         try
         {
+            state.TheSocket.EndConnect(ar);
             toCall(state);
         }
         catch
@@ -264,6 +264,8 @@ public static class Networking
     /// <returns>True if the send process was started, false if an error occurs or the socket is already closed</returns>
     public static bool Send(Socket socket, string data)
     {
+        if (socket.Connected == false) return false;
+
         try
         {
             byte[] messageBytes = Encoding.UTF8.GetBytes(data);
@@ -309,6 +311,8 @@ public static class Networking
     /// <returns>True if the send process was started, false if an error occurs or the socket is already closed</returns>
     public static bool SendAndClose(Socket socket, string data)
     {
+        if (socket.Connected == false) return false;
+
         try
         {
             byte[] messageBytes = Encoding.UTF8.GetBytes(data);
