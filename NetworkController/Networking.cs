@@ -142,12 +142,11 @@ public static class Networking
         {
             SocketState state = new SocketState(toCall, socket);
             IAsyncResult result = state.TheSocket.BeginConnect(ipAddress, port, ConnectedCallback, state);
-            bool success = result.AsyncWaitHandle.WaitOne(3000, true);
-            if (!success) 
+            bool success = result.AsyncWaitHandle.WaitOne(3000);
+            if (!success)
             {
                 throw new Exception();
             }
-            toCall(state);
         }
         catch
         {
@@ -180,7 +179,9 @@ public static class Networking
         }
         catch
         {
-            toCall(new SocketState(toCall, "CONNECTED CALLBACK ERROR"));
+            state.ErrorOccurred = true;
+            state.ErrorMessage = "CONNECTED CALLBACK ERROR";
+            toCall(state);
         }
     }
 
@@ -208,7 +209,9 @@ public static class Networking
         }
         catch
         {
-            state = new SocketState(state.OnNetworkAction, "GET DATA ERROR");
+
+            state.ErrorOccurred = true;
+            state.ErrorMessage = "GET DATA ERROR";
             state.OnNetworkAction(state);
         }
     }
@@ -247,7 +250,9 @@ public static class Networking
         }
         catch
         {
-            toCall(new SocketState(toCall, "RECEIVE CALLBACK ERROR"));
+            state.ErrorOccurred = true;
+            state.ErrorMessage = "RECIEVE CALLBACK ERROR";
+            toCall(state);
         }
     }
 
