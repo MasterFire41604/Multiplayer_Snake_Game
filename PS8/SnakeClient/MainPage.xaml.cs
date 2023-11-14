@@ -1,11 +1,27 @@
-﻿namespace SnakeGame;
+﻿using Controller;
+
+namespace SnakeGame;
 
 public partial class MainPage : ContentPage
 {
+    GameController controller = new();
     public MainPage()
     {
         InitializeComponent();
         graphicsView.Invalidate();
+
+        controller.JSONArrived += HandleJsonString;
+        controller.Error += ShowError;
+    }
+
+    private void HandleJsonString(string json)
+    {
+        DisplayAlert("JSONdata", json, "OK");
+    }
+
+    private void ShowError(string err)
+    {
+        DisplayAlert("Error", err, "OK");
     }
 
     void OnTapped(object sender, EventArgs args)
@@ -65,7 +81,11 @@ public partial class MainPage : ContentPage
             DisplayAlert("Error", "Name must be less than 16 characters", "OK");
             return;
         }
-        DisplayAlert("Delete this", "Code to start the controller's connecting process goes here", "OK");
+        // Disable button
+        connectButton.IsEnabled = false;
+
+        // Controller handles connection to server
+        controller.Connect(serverText.Text);
 
         keyboardHack.Focus();
     }
