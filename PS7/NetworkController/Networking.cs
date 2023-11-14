@@ -169,7 +169,7 @@ public static class Networking
     private static void ConnectedCallback(IAsyncResult ar)
     {
         SocketState state = (SocketState)ar.AsyncState!;
-        Action<SocketState>  toCall = state.OnNetworkAction;
+        Action<SocketState> toCall = state.OnNetworkAction;
 
         try
         {
@@ -297,7 +297,7 @@ public static class Networking
     {
         Socket socket = (Socket)ar.AsyncState!;
         socket.EndSend(ar);
-        
+
     }
 
 
