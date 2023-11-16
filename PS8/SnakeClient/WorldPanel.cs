@@ -13,8 +13,7 @@ using Microsoft.Maui;
 using System.Net;
 using Font = Microsoft.Maui.Graphics.Font;
 using SizeF = Microsoft.Maui.Graphics.SizeF;
-
-
+using Model;
 
 namespace SnakeGame;
 public class WorldPanel : IDrawable
@@ -23,6 +22,8 @@ public class WorldPanel : IDrawable
     private IImage background;
 
     private bool initializedForDrawing = false;
+
+    private World theWorld;
 
     private IImage loadImage(string name)
     {
@@ -42,6 +43,11 @@ public class WorldPanel : IDrawable
     {
     }
 
+    public void SetWorld(World world)
+    { 
+        theWorld = world;
+    }
+
     private void InitializeDrawing()
     {
         wall = loadImage( "wallsprite.png" );
@@ -51,6 +57,11 @@ public class WorldPanel : IDrawable
 
     public void Draw(ICanvas canvas, RectF dirtyRect)
     {
+        /*float playerX = ... (the player's world-space X coordinate)
+        float playerY = ... (the player's world-space Y coordinate)
+        canvas.Translate(-playerX + (viewSize / 2), -playerY + (viewSize / 2));*/
+
+
         if ( !initializedForDrawing )
             InitializeDrawing();
 
@@ -59,7 +70,14 @@ public class WorldPanel : IDrawable
 
         // example code for how to draw
         // (the image is not visible in the starter code)
-        canvas.DrawImage(wall, 0, 0, wall.Width, wall.Height);
+        foreach (Wall wallData in theWorld.walls.Values)
+        {
+            canvas.DrawImage(wall, (float)wallData.p1.X, (float)wallData.p1.Y, wall.Width, wall.Height);
+        }
+        foreach (Snake snake in theWorld.snakes.Values)
+        {
+            foreach (Vector2D bodyPart in snake.body) { canvas.DrawCircle((float)bodyPart.X, (float)bodyPart.Y, 100); }
+        }
     }
 
 }

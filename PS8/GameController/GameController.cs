@@ -1,14 +1,17 @@
 ﻿using NetworkUtil;
-using System.Runtime.CompilerServices;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using Model;
+using System.Text.Json;
 
 namespace Controller
 {
     public class GameController
     {
         // Controller events that the view can subscribe to
-        public delegate void JSONHandler(string json);
-        public event JSONHandler? JSONArrived;
+        public delegate void JSONHandler();
+        public event JSONHandler? JSONProcess;
+
+        public delegate void ConnectedHandler();
+        public event ConnectedHandler? Connected;
 
         public delegate void ErrorHandler(string err);
         public event ErrorHandler? Error;
@@ -17,7 +20,14 @@ namespace Controller
         /// State representing the connection with the server
         /// </summary>
         SocketState? theServer = null;
+        // TODO: might be weird
+        World theWorld = new(0);
 
+
+        public World GetWorld()
+        {
+            return theWorld;
+        }
 
         public void Connect(string addr)
         {
@@ -34,6 +44,9 @@ namespace Controller
             }
 
             theServer = state;
+
+            // inform the view
+            Connected?.Invoke();
 
             // Start an event loop to receive messages from the server
             state.OnNetworkAction = ReceiveJSON;
@@ -60,12 +73,49 @@ namespace Controller
 
         private void ProcessJSON(SocketState state)
         {
-            string jsonData = state.GetData();
+            string serverData = state.GetData();
+            string[] splitData = serverData.Split('\n');
 
-            // Use our model
+            if (int.TryParse(splitData[1], out int size))
+            {
+                theWorld = new(size);
+            }
 
-            // 
-            JSONArrived?.Invoke(jsonData);
+            // Parse jsonData for snake, wall, and powerup
+            foreach (string data in splitData)
+            {
+                if (data.Contains("{"))
+                {
+                    JsonDocument doc = JsonDocument.Parse(data);
+
+                    if (doc.RootElement.TryGetProperty("snake", out _))
+                    {
+                        Snake? snake = JsonSerializer.Deserialize<Snake>(doc);
+                        if (theWorld.snakes.ContainsKey(snake!.snake)) { theWorld.snakes[snake!.snake] = snake; }
+                        else { theWorld.snakes.Add(snake!.snake, snake); }
+                    }
+                    if (doc.RootElement.TryGetProperty("power", out _))
+                    {
+                        Powerup? powerup = JsonSerializer.Deserialize<Powerup>(doc);
+                        if (theWorld.powerups.ContainsKey(powerup!.power)) { theWorld.powerups[powerup!.power] = powerup; }
+                        else { theWorld.powerups.Add(powerup!.power, powerup); }
+                    }
+                    if (doc.RootElement.TryGetProperty("wall", out _))
+                    {
+                        Wall? wall = JsonSerializer.Deserialize<Wall>(doc);
+                        if (theWorld.walls.ContainsKey(wall!.wall)) { theWorld.walls[wall!.wall] = wall; }
+                        else { theWorld.walls.Add(wall!.wall, wall); }
+                    }
+                }
+            }
+            
+            JSONProcess?.Invoke();
+
+        }
+
+        public void Send(string message)
+        {
+            Networking.Send(theServer!.TheSocket, message);
         }
     }
 }

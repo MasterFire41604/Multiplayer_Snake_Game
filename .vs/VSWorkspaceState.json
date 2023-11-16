@@ -1,7 +1,9 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\PS8",
+    "\\PS8\\GameController"
   ],
-  "SelectedNode": "\\C:\\Users\\codin\\Source\\Repos\\game-insert_name_here_game",
+  "SelectedNode": "\\PS8\\SnakeGame.sln",
   "PreviewInSolutionExplorer": false
 }

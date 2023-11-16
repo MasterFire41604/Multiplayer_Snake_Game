@@ -1,27 +1,34 @@
 ﻿using Controller;
+using Model;
 
 namespace SnakeGame;
 
 public partial class MainPage : ContentPage
 {
-    GameController controller = new();
+    GameController controller;
     public MainPage()
     {
         InitializeComponent();
+        controller = new GameController();
+        worldPanel.SetWorld(controller.GetWorld());
         graphicsView.Invalidate();
 
-        controller.JSONArrived += HandleJsonString;
+        controller.JSONProcess += OnFrame;
+        controller.Connected += HandleConnected;
         controller.Error += ShowError;
     }
 
-    private void HandleJsonString(string json)
+    /// <summary>
+    /// Handler for the controller's Connected event
+    /// </summary>
+    private void HandleConnected()
     {
-        DisplayAlert("JSONdata", json, "OK");
+        controller.Send(nameText.Text + "\n");
     }
 
     private void ShowError(string err)
     {
-        DisplayAlert("Error", err, "OK");
+        Dispatcher.Dispatch(() => DisplayAlert("Error", err, "OK"));
     }
 
     void OnTapped(object sender, EventArgs args)
@@ -95,6 +102,8 @@ public partial class MainPage : ContentPage
     /// </summary>
     public void OnFrame()
     {
+        World world = controller.GetWorld();
+        worldPanel.SetWorld(world);
         Dispatcher.Dispatch(() => graphicsView.Invalidate());
     }
 
