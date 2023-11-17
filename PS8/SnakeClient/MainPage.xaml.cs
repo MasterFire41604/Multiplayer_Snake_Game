@@ -10,7 +10,7 @@ public partial class MainPage : ContentPage
     {
         InitializeComponent();
         controller = new GameController();
-        worldPanel.SetWorld(controller.GetWorld());
+        worldPanel.SetWorld(controller.GetWorld(), graphicsView);
         graphicsView.Invalidate();
 
         controller.JSONProcess += OnFrame;
@@ -43,18 +43,22 @@ public partial class MainPage : ContentPage
         if (text == "w")
         {
             // Move up
+            controller.Send("{\"moving\":\"up\"}\n");
         }
         else if (text == "a")
         {
             // Move left
+            controller.Send("{\"moving\":\"left\"}\n");
         }
         else if (text == "s")
         {
             // Move down
+            controller.Send("{\"moving\":\"down\"}\n");
         }
         else if (text == "d")
         {
             // Move right
+            controller.Send("{\"moving\":\"right\"}\n");
         }
         entry.Text = "";
     }
@@ -103,7 +107,7 @@ public partial class MainPage : ContentPage
     public void OnFrame()
     {
         World world = controller.GetWorld();
-        worldPanel.SetWorld(world);
+        worldPanel.SetWorld(world, graphicsView);
         Dispatcher.Dispatch(() => graphicsView.Invalidate());
     }
 

@@ -24,6 +24,8 @@ public class WorldPanel : IDrawable
     private bool initializedForDrawing = false;
 
     private World theWorld;
+    private GraphicsView graphicsView;
+    public delegate void ObjectDrawer(object o, ICanvas canvas);
 
     private IImage loadImage(string name)
     {
@@ -39,12 +41,14 @@ public class WorldPanel : IDrawable
         }
     }
 
-    public WorldPanel()
+    public WorldPanel() 
     {
+
     }
 
-    public void SetWorld(World world)
-    { 
+    public void SetWorld(World world, GraphicsView graphicsView)
+    {
+        this.graphicsView = graphicsView;
         theWorld = world;
     }
 
@@ -55,15 +59,62 @@ public class WorldPanel : IDrawable
         initializedForDrawing = true;
     }
 
+    /// <summary>
+    /// This method performs a translation and rotation to draw an object.
+    /// </summary>
+    /// <param name="canvas">The canvas object for drawing onto</param>
+    /// <param name="o">The object to draw</param>
+    /// <param name="worldX">The X component of the object's position in world space</param>
+    /// <param name="worldY">The Y component of the object's position in world space</param>
+    /// <param name="angle">The orientation of the object, measured in degrees clockwise from "up"</param>
+    /// <param name="drawer">The drawer delegate. After the transformation is applied, the delegate is invoked to draw whatever it wants</param>
+    private void DrawObjectWithTransform(ICanvas canvas, object o, double worldX, double worldY, double angle, ObjectDrawer drawer)
+    {
+        // "push" the current transform
+        canvas.SaveState();
+
+        canvas.Translate((float)worldX, (float)worldY);
+        canvas.Rotate((float)angle);
+        drawer(o, canvas);
+
+        // "pop" the transform
+        canvas.RestoreState();
+    }
+
+    /// <summary>
+    /// A method that can be used as an ObjectDrawer delegate
+    /// </summary>
+    /// <param name="o">The snake to draw</param>
+    /// <param name="canvas"></param>
+    private void SnakeSegmentDrawer(object o, ICanvas canvas)
+    {
+        double s = (double)o;
+        canvas.FillColor = Colors.Purple;
+
+        // Ellipses are drawn starting from the top-left corner.
+        // So if we want the circle centered on the powerup's location, we have to offset it
+        // by half its size to the left (-width/2) and up (-height/2)
+        //canvas.DrawImage(wall, 0, 0, wall.Width, wall.Height);
+        //canvas.FillEllipse(-(width / 2), -(width / 2), width, width);
+        canvas.DrawLine(0, 0, 0, (float)-s);
+    }
+
     public void Draw(ICanvas canvas, RectF dirtyRect)
     {
-        /*float playerX = ... (the player's world-space X coordinate)
-        float playerY = ... (the player's world-space Y coordinate)
-        canvas.Translate(-playerX + (viewSize / 2), -playerY + (viewSize / 2));*/
-
+        if (theWorld.snakes.ContainsKey(theWorld.PlayerID))
+        {
+            Snake playerSnake = theWorld.snakes[theWorld.PlayerID];
+            float playerX = (float)playerSnake.body[0].GetX();
+            float playerY = (float)playerSnake.body[0].GetY();
+            canvas.Translate(-playerX + ((float)graphicsView.X / 2), -playerY + ((float)graphicsView.Y / 2));
+        }
 
         if ( !initializedForDrawing )
             InitializeDrawing();
+
+        // Draw background
+        canvas.FillColor = Colors.Green;
+        canvas.DrawImage(background, (float)-theWorld.Size / 2, (float)-theWorld.Size / 2, (float)theWorld.Size, (float)theWorld.Size);
 
         // undo previous transformations from last frame
         canvas.ResetState();
@@ -76,7 +127,19 @@ public class WorldPanel : IDrawable
         }
         foreach (Snake snake in theWorld.snakes.Values)
         {
-            foreach (Vector2D bodyPart in snake.body) { canvas.DrawCircle((float)bodyPart.X, (float)bodyPart.Y, 100); }
+            Vector2D lastSegment = null;
+            foreach (Vector2D bodyPart in snake.body) 
+            {
+                double length = 0;
+                if (lastSegment == null)
+                {
+                    lastSegment = bodyPart;
+                }
+                else
+                    length = (bodyPart - lastSegment).Length();
+
+                DrawObjectWithTransform(canvas, length, (float)bodyPart.GetX(), (float)bodyPart.GetY(), 0, SnakeSegmentDrawer); 
+            }
         }
     }
 

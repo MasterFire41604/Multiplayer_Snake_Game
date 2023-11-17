@@ -21,7 +21,7 @@ namespace Controller
         /// </summary>
         SocketState? theServer = null;
         // TODO: might be weird
-        World theWorld = new(0);
+        World theWorld = new(0, -1);
 
 
         public World GetWorld()
@@ -76,9 +76,9 @@ namespace Controller
             string serverData = state.GetData();
             string[] splitData = serverData.Split('\n');
 
-            if (int.TryParse(splitData[1], out int size))
+            if (double.TryParse(splitData[1], out double size))
             {
-                theWorld = new(size);
+                theWorld = new(size, int.Parse(splitData[0]));
             }
 
             // Parse jsonData for snake, wall, and powerup
