@@ -1,6 +1,7 @@
 ﻿using NetworkUtil;
 using Model;
 using System.Text.Json;
+using System.Diagnostics;
 
 namespace Controller
 {
@@ -66,15 +67,15 @@ namespace Controller
 
             // Continue the event loop
             // state.OnNetworkAction has not been changed, 
-            // so this same method (ReceiveMessage) 
+            // so this same method (ReceiveJSON) 
             // will be invoked when more data arrives
             Networking.GetData(state);
         }
 
         private void ProcessJSON(SocketState state)
         {
-            string serverData = state.GetData();
-            string[] splitData = serverData.Split('\n');
+            string[] splitData = state.GetData().Split('\n');
+            if (splitData[splitData.Length - 1] != "") { splitData[splitData.Length - 1] = ""; }
 
             if (double.TryParse(splitData[1], out double size))
             {
@@ -86,6 +87,7 @@ namespace Controller
             {
                 if (data.Contains("{"))
                 {
+                    
                     JsonDocument doc = JsonDocument.Parse(data);
 
                     if (doc.RootElement.TryGetProperty("snake", out _))

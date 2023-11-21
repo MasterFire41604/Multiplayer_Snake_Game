@@ -59,7 +59,7 @@ public class WorldPanel : IDrawable
         initializedForDrawing = true;
     }
 
-    /// <summary>
+    /*/// <summary>
     /// This method performs a translation and rotation to draw an object.
     /// </summary>
     /// <param name="canvas">The canvas object for drawing onto</param>
@@ -79,24 +79,18 @@ public class WorldPanel : IDrawable
 
         // "pop" the transform
         canvas.RestoreState();
-    }
+    }*/
 
     /// <summary>
     /// A method that can be used as an ObjectDrawer delegate
     /// </summary>
     /// <param name="o">The snake to draw</param>
     /// <param name="canvas"></param>
-    private void SnakeSegmentDrawer(object o, ICanvas canvas)
+    private void DrawSnake(ICanvas canvas, double x1, double y1, double x2, double y2)
     {
-        double s = (double)o;
-        canvas.FillColor = Colors.Purple;
-
-        // Ellipses are drawn starting from the top-left corner.
-        // So if we want the circle centered on the powerup's location, we have to offset it
-        // by half its size to the left (-width/2) and up (-height/2)
-        //canvas.DrawImage(wall, 0, 0, wall.Width, wall.Height);
-        //canvas.FillEllipse(-(width / 2), -(width / 2), width, width);
-        canvas.DrawLine(0, 0, 0, (float)-s);
+        canvas.StrokeSize = 10;
+        canvas.StrokeColor = Colors.Purple;
+        canvas.DrawLine((float)x1, (float)y1, (float)x2, (float)y2);
     }
 
     public void Draw(ICanvas canvas, RectF dirtyRect)
@@ -104,9 +98,9 @@ public class WorldPanel : IDrawable
         if (theWorld.snakes.ContainsKey(theWorld.PlayerID))
         {
             Snake playerSnake = theWorld.snakes[theWorld.PlayerID];
-            float playerX = (float)playerSnake.body[0].GetX();
-            float playerY = (float)playerSnake.body[0].GetY();
-            canvas.Translate(-playerX + ((float)graphicsView.X / 2), -playerY + ((float)graphicsView.Y / 2));
+            float playerX = (float)playerSnake.body[playerSnake.body.Count - 1].GetX();
+            float playerY = (float)playerSnake.body[playerSnake.body.Count - 1].GetY();
+            canvas.Translate(-playerX + ((float)graphicsView.Width / 2), -playerY + ((float)graphicsView.Height / 2));
         }
 
         if ( !initializedForDrawing )
@@ -121,25 +115,47 @@ public class WorldPanel : IDrawable
 
         // example code for how to draw
         // (the image is not visible in the starter code)
+        // Draw walls
         foreach (Wall wallData in theWorld.walls.Values)
         {
-            canvas.DrawImage(wall, (float)wallData.p1.X, (float)wallData.p1.Y, wall.Width, wall.Height);
+            double width = Math.Abs((wallData.p2.GetX()) - (wallData.p1.GetX())) + 50;
+            double height = Math.Abs((wallData.p2.GetY()) - (wallData.p1.GetY())) + 50;
+            int wallWidthSegments = (int)(width / 50);
+            int wallHeightSegments = (int)(height / 50);
+            for (int i = 0; i < wallHeightSegments; i++)
+            {
+                for (int j = 0; j < wallWidthSegments; j++)
+                {
+                    canvas.DrawImage(wall, (float)wallData.p1.GetX() + (j * 50) - 25, (float)wallData.p1.GetY() + (i * 50) -25, 50, 50);
+                }
+            }
         }
+        // Draw snakes
         foreach (Snake snake in theWorld.snakes.Values)
         {
+            float snakeX = (float)snake.body[snake.body.Count - 1].GetX();
+            float snakeY = (float)snake.body[snake.body.Count - 1].GetY();
             Vector2D lastSegment = null;
-            foreach (Vector2D bodyPart in snake.body) 
+            foreach (Vector2D bodyPart in snake.body)
             {
-                double length = 0;
                 if (lastSegment == null)
                 {
                     lastSegment = bodyPart;
                 }
                 else
-                    length = (bodyPart - lastSegment).Length();
-
-                DrawObjectWithTransform(canvas, length, (float)bodyPart.GetX(), (float)bodyPart.GetY(), 0, SnakeSegmentDrawer); 
+                {
+                    DrawSnake(canvas, bodyPart.GetX(), bodyPart.GetY(), lastSegment.GetX(), lastSegment.GetY());
+                    lastSegment = bodyPart;
+                }
             }
+            // Draw snake name and score
+            canvas.DrawString(snake.name + " " + snake.score, snakeX, snakeY - 25, HorizontalAlignment.Center);
+        }
+        // Draw powerups
+        foreach (Powerup p in theWorld.powerups.Values)
+        {
+            int size = 16;
+            canvas.DrawEllipse((float)p.loc.GetX() - size / 2, (float)p.loc.GetY() - size / 2, size, size);
         }
     }
 
