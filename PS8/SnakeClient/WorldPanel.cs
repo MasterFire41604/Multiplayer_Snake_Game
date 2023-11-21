@@ -117,7 +117,13 @@ public class WorldPanel : IDrawable
         }
 
         canvas.StrokeSize = 10;
+        canvas.StrokeLineCap = LineCap.Round;
         canvas.DrawLine((float)x1, (float)y1, (float)x2, (float)y2);
+    }
+
+    private void DrawParticles(ICanvas canvas)
+    {
+        
     }
 
     public void Draw(ICanvas canvas, RectF dirtyRect)
@@ -145,43 +151,14 @@ public class WorldPanel : IDrawable
         // undo previous transformations from last frame
         canvas.ResetState();
 
-        // example code for how to draw
-        // (the image is not visible in the starter code)
         // Draw walls
         foreach (Wall wallData in theWorld.walls.Values)
         {
-            /*float width = Math.Abs((float)wallData.p2.GetX() - (float)wallData.p1.GetX()) + 50;
-            float height = Math.Abs((float)wallData.p2.GetY() - (float)wallData.p1.GetY()) + 50;
-
-
-            canvas.FillColor = Colors.Gray;
-            if (wallData.p1.GetX() < wallData.p2.GetX() || wallData.p1.GetY() < wallData.p2.GetY()) 
-            {
-                canvas.FillRectangle
-                (
-                (float)wallData.p1.GetX() - 25,
-                (float)wallData.p1.GetY() - 25,
-                width,
-                height
-                );
-            }
-            else 
-            {
-                canvas.FillRectangle
-                (
-                (float)wallData.p2.GetX() - 25,
-                (float)wallData.p2.GetY() - 25,
-                width,
-                height
-                );
-            }*/
-            
-
-            // Image stuff
-            double width = Math.Abs((wallData.p2.GetX()) - (wallData.p1.GetX())) + 50;
-            double height = Math.Abs((wallData.p2.GetY()) - (wallData.p1.GetY())) + 50;
+            double width = Math.Abs(wallData.p2.GetX() - wallData.p1.GetX()) + 50;
+            double height = Math.Abs(wallData.p2.GetY() - wallData.p1.GetY()) + 50;
             int wallWidthSegments = (int)(width / 50);
             int wallHeightSegments = (int)(height / 50);
+
             if (wallData.p1.GetX() < wallData.p2.GetX() || wallData.p1.GetY() < wallData.p2.GetY())
             {
                 for (int i = 0; i < wallHeightSegments; i++)
@@ -226,6 +203,10 @@ public class WorldPanel : IDrawable
                 }
                 // Draw snake name and score
                 canvas.DrawString(snake.name + " " + snake.score, snakeX, snakeY - 25, HorizontalAlignment.Center);
+            }
+            else
+            {
+                DrawParticles(canvas);
             }
         }
         // Draw powerups
