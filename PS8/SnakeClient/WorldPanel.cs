@@ -86,10 +86,37 @@ public class WorldPanel : IDrawable
     /// </summary>
     /// <param name="o">The snake to draw</param>
     /// <param name="canvas"></param>
-    private void DrawSnake(ICanvas canvas, double x1, double y1, double x2, double y2)
+    private void DrawSnake(ICanvas canvas, double x1, double y1, double x2, double y2, int snakeID)
     {
+        switch (snakeID % 8)
+        {
+            case 0:
+                canvas.StrokeColor = Colors.Red;
+                break;
+            case 1:
+                canvas.StrokeColor = Colors.Orange;
+                break;
+            case 2:
+                canvas.StrokeColor = Colors.Yellow;
+                break;
+            case 3:
+                canvas.StrokeColor = Colors.Green;
+                break;
+            case 4:
+                canvas.StrokeColor = Colors.Blue;
+                break;
+            case 5:
+                canvas.StrokeColor = Colors.Indigo;
+                break;
+            case 6:
+                canvas.StrokeColor = Colors.Violet;
+                break;
+            case 7:
+                canvas.StrokeColor = Colors.Black;
+                break;
+        }
+
         canvas.StrokeSize = 10;
-        canvas.StrokeColor = Colors.Purple;
         canvas.DrawLine((float)x1, (float)y1, (float)x2, (float)y2);
     }
 
@@ -110,6 +137,11 @@ public class WorldPanel : IDrawable
         canvas.FillColor = Colors.Green;
         canvas.DrawImage(background, (float)-theWorld.Size / 2, (float)-theWorld.Size / 2, (float)theWorld.Size, (float)theWorld.Size);
 
+        canvas.FillColor = Colors.Black;
+        canvas.FillRectangle(0, 0, 10, 10);
+        canvas.FillColor = Colors.Red;
+        canvas.FillRectangle(0, 0, -50, -50);
+
         // undo previous transformations from last frame
         canvas.ResetState();
 
@@ -118,44 +150,94 @@ public class WorldPanel : IDrawable
         // Draw walls
         foreach (Wall wallData in theWorld.walls.Values)
         {
+            /*float width = Math.Abs((float)wallData.p2.GetX() - (float)wallData.p1.GetX()) + 50;
+            float height = Math.Abs((float)wallData.p2.GetY() - (float)wallData.p1.GetY()) + 50;
+
+
+            canvas.FillColor = Colors.Gray;
+            if (wallData.p1.GetX() < wallData.p2.GetX() || wallData.p1.GetY() < wallData.p2.GetY()) 
+            {
+                canvas.FillRectangle
+                (
+                (float)wallData.p1.GetX() - 25,
+                (float)wallData.p1.GetY() - 25,
+                width,
+                height
+                );
+            }
+            else 
+            {
+                canvas.FillRectangle
+                (
+                (float)wallData.p2.GetX() - 25,
+                (float)wallData.p2.GetY() - 25,
+                width,
+                height
+                );
+            }*/
+            
+
+            // Image stuff
             double width = Math.Abs((wallData.p2.GetX()) - (wallData.p1.GetX())) + 50;
             double height = Math.Abs((wallData.p2.GetY()) - (wallData.p1.GetY())) + 50;
             int wallWidthSegments = (int)(width / 50);
             int wallHeightSegments = (int)(height / 50);
-            for (int i = 0; i < wallHeightSegments; i++)
+            if (wallData.p1.GetX() < wallData.p2.GetX() || wallData.p1.GetY() < wallData.p2.GetY())
             {
-                for (int j = 0; j < wallWidthSegments; j++)
+                for (int i = 0; i < wallHeightSegments; i++)
                 {
-                    canvas.DrawImage(wall, (float)wallData.p1.GetX() + (j * 50) - 25, (float)wallData.p1.GetY() + (i * 50) -25, 50, 50);
+                    for (int j = 0; j < wallWidthSegments; j++)
+                    {
+                        canvas.DrawImage(wall, (float)wallData.p1.GetX() + (j * 50) - 25, (float)wallData.p1.GetY() + (i * 50) - 25, 50, 50);
+                    }
                 }
             }
+            else
+            {
+                for (int i = 0; i < wallHeightSegments; i++)
+                {
+                    for (int j = 0; j < wallWidthSegments; j++)
+                    {
+                        canvas.DrawImage(wall, (float)wallData.p2.GetX() + (j * 50) - 25, (float)wallData.p2.GetY() + (i * 50) - 25, 50, 50);
+                    }
+                }
+            }
+            
         }
         // Draw snakes
         foreach (Snake snake in theWorld.snakes.Values)
         {
-            float snakeX = (float)snake.body[snake.body.Count - 1].GetX();
-            float snakeY = (float)snake.body[snake.body.Count - 1].GetY();
-            Vector2D lastSegment = null;
-            foreach (Vector2D bodyPart in snake.body)
+            if (snake.alive)
             {
-                if (lastSegment == null)
+                float snakeX = (float)snake.body[snake.body.Count - 1].GetX();
+                float snakeY = (float)snake.body[snake.body.Count - 1].GetY();
+                Vector2D lastSegment = null;
+                foreach (Vector2D bodyPart in snake.body)
                 {
-                    lastSegment = bodyPart;
+                    if (lastSegment == null)
+                    {
+                        lastSegment = bodyPart;
+                    }
+                    else
+                    {
+                        DrawSnake(canvas, bodyPart.GetX(), bodyPart.GetY(), lastSegment.GetX(), lastSegment.GetY(), snake.snake);
+                        lastSegment = bodyPart;
+                    }
                 }
-                else
-                {
-                    DrawSnake(canvas, bodyPart.GetX(), bodyPart.GetY(), lastSegment.GetX(), lastSegment.GetY());
-                    lastSegment = bodyPart;
-                }
+                // Draw snake name and score
+                canvas.DrawString(snake.name + " " + snake.score, snakeX, snakeY - 25, HorizontalAlignment.Center);
             }
-            // Draw snake name and score
-            canvas.DrawString(snake.name + " " + snake.score, snakeX, snakeY - 25, HorizontalAlignment.Center);
         }
         // Draw powerups
         foreach (Powerup p in theWorld.powerups.Values)
         {
-            int size = 16;
-            canvas.DrawEllipse((float)p.loc.GetX() - size / 2, (float)p.loc.GetY() - size / 2, size, size);
+            int radius = 8;
+            if (!p.died)
+            {
+                canvas.FillColor = Colors.Blue;
+                canvas.FillCircle((float)p.loc.GetX(), (float)p.loc.GetY(), radius);
+            }
+            
         }
     }
 

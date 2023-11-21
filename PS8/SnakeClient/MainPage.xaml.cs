@@ -29,6 +29,7 @@ public partial class MainPage : ContentPage
     private void ShowError(string err)
     {
         Dispatcher.Dispatch(() => DisplayAlert("Error", err, "OK"));
+        Dispatcher.Dispatch(() => connectButton.IsEnabled = true);
     }
 
     void OnTapped(object sender, EventArgs args)
@@ -63,10 +64,10 @@ public partial class MainPage : ContentPage
         entry.Text = "";
     }
 
-    private void NetworkErrorHandler()
+    /*private void NetworkErrorHandler()
     {
         DisplayAlert("Error", "Disconnected from server", "OK");
-    }
+    }*/
 
 
     /// <summary>
