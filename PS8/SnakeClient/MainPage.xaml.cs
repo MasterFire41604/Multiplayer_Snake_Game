@@ -126,7 +126,7 @@ public partial class MainPage : ContentPage
     {
         DisplayAlert("About",
       "SnakeGame solution\nArtwork by Jolie Uk and Alex Smith\nGame design by Daniel Kopta and Travis Martin\n" +
-      "Implementation by ...\n" +
+      "Implementation by Isaac Anderson and Ryan Beard\n" +
         "CS 3500 Fall 2022, University of Utah", "OK");
     }
 
