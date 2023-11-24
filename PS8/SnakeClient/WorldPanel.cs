@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using IImage = Microsoft.Maui.Graphics.IImage;
 #if MACCATALYST
 using Microsoft.Maui.Graphics.Platform;
@@ -18,8 +17,8 @@ using System.Diagnostics.Metrics;
 namespace SnakeGame;
 public class WorldPanel : IDrawable
 {
-    // Speed of the death particles
-    private int speed = 0;
+    // Dictionary relating a snake's ID to the "speed" of it's death particles
+    private Dictionary<int, int> snakeSpeeds = new();
 
     private IImage wall;
     private IImage background;
@@ -117,17 +116,13 @@ public class WorldPanel : IDrawable
     /// <param name="canvas">The canvas to draw on</param>
     /// <param name="snakeX">The snake's head's x position</param>
     /// <param name="snakeY">The snake's head's y position</param>
-    private void DrawParticles(ICanvas canvas, float snakeX, float snakeY)
+    private void DrawParticles(ICanvas canvas, float snakeX, float snakeY, int speed)
     {
-
-        canvas.FillColor = Colors.Red;
-        //if (speed <= 60)
-        //{
-            for (int i = 0; i < 20; i++)
-            {
-                canvas.FillCircle(snakeX + speed * (float)Math.Cos(i), snakeY + speed * (float)Math.Sin(i), 2);
-            }
-        //}
+        canvas.FillColor = Colors.DarkRed;
+        for (int i = 0; i < 20; i++)
+        {
+            canvas.FillCircle(snakeX + (speed + i) * (float)Math.Cos(i), snakeY + (speed + i) * (float)Math.Sin(i), 2);
+        }
     }
 
     public void Draw(ICanvas canvas, RectF dirtyRect)
@@ -187,11 +182,18 @@ public class WorldPanel : IDrawable
         {
             foreach (Snake snake in theWorld.snakes.Values)
             {
+                if (snake.died) {
+                    if (snakeSpeeds.ContainsKey(snake.snake)) { snakeSpeeds[snake.snake] = 0; }
+                    else { snakeSpeeds.Add(snake.snake, 0); }
+                }
+                if (snake.dc) { 
+                    snakeSpeeds.Remove(snake.snake);
+                }
+
                 float snakeX = (float)snake.body[snake.body.Count - 1].GetX();
                 float snakeY = (float)snake.body[snake.body.Count - 1].GetY();
                 if (snake.alive)
                 {
-                    speed = 0;
                     Vector2D lastSegment = null;
                     foreach (Vector2D bodyPart in snake.body)
                     {
@@ -211,8 +213,11 @@ public class WorldPanel : IDrawable
                 else
                 {
                     // Draw particles when the snake dies
-                    speed += 3;
-                    DrawParticles(canvas, snakeX, snakeY);
+                    if (snakeSpeeds.ContainsKey(snake.snake)) 
+                    {
+                        snakeSpeeds[snake.snake] += 2;
+                        if (snakeSpeeds[snake.snake] <= 100) { DrawParticles(canvas, snakeX, snakeY, snakeSpeeds[snake.snake]); }
+                    }
                 }
             }
         }
