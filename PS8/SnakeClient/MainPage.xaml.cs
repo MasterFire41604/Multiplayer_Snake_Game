@@ -13,6 +13,7 @@ public partial class MainPage : ContentPage
         worldPanel.SetWorld(controller.GetWorld(), graphicsView);
         graphicsView.Invalidate();
 
+        // Subscribe to events
         controller.JSONProcess += OnFrame;
         controller.Connected += HandleConnected;
         controller.Error += ShowError;
@@ -26,17 +27,28 @@ public partial class MainPage : ContentPage
         controller.Send(nameText.Text + "\n");
     }
 
+    /// <summary>
+    /// Displays an error on the GUI
+    /// </summary>
+    /// <param name="err">The error message to be displayed</param>
     private void ShowError(string err)
     {
         Dispatcher.Dispatch(() => DisplayAlert("Error", err, "OK"));
         Dispatcher.Dispatch(() => connectButton.IsEnabled = true);
     }
 
+
     void OnTapped(object sender, EventArgs args)
     {
         keyboardHack.Focus();
     }
 
+    /// <summary>
+    /// When text is changed in the text box, check if it is a movement key and then send the proper text
+    /// to the server.
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="args"></param>
     void OnTextChanged(object sender, TextChangedEventArgs args)
     {
         Entry entry = (Entry)sender;
@@ -63,12 +75,6 @@ public partial class MainPage : ContentPage
         }
         entry.Text = "";
     }
-
-    /*private void NetworkErrorHandler()
-    {
-        DisplayAlert("Error", "Disconnected from server", "OK");
-    }*/
-
 
     /// <summary>
     /// Event handler for the connect button
@@ -103,7 +109,8 @@ public partial class MainPage : ContentPage
     }
 
     /// <summary>
-    /// Use this method as an event handler for when the controller has updated the world
+    /// Event handler for when the controller has updated the world. Every frame this sets the world in worldPanel
+    /// so it may display it properly.
     /// </summary>
     public void OnFrame()
     {
@@ -112,6 +119,11 @@ public partial class MainPage : ContentPage
         Dispatcher.Dispatch(() => graphicsView.Invalidate());
     }
 
+    /// <summary>
+    /// Information on game controls
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
     private void ControlsButton_Clicked(object sender, EventArgs e)
     {
         DisplayAlert("Controls",
@@ -122,11 +134,16 @@ public partial class MainPage : ContentPage
                      "OK");
     }
 
+    /// <summary>
+    /// Information about the game
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
     private void AboutButton_Clicked(object sender, EventArgs e)
     {
         DisplayAlert("About",
       "SnakeGame solution\nArtwork by Jolie Uk and Alex Smith\nGame design by Daniel Kopta and Travis Martin\n" +
-      "Implementation by ...\n" +
+      "Implementation by Isaac Anderson and Ryan Beard.\n" +
         "CS 3500 Fall 2022, University of Utah", "OK");
     }
 

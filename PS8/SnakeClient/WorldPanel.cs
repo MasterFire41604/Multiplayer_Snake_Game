@@ -7,25 +7,28 @@ using Microsoft.Maui.Graphics.Platform;
 #else
 using Microsoft.Maui.Graphics.Win2D;
 #endif
-using Color = Microsoft.Maui.Graphics.Color;
 using System.Reflection;
 using Microsoft.Maui;
 using System.Net;
 using Font = Microsoft.Maui.Graphics.Font;
 using SizeF = Microsoft.Maui.Graphics.SizeF;
 using Model;
+using System.Diagnostics.Metrics;
 
 namespace SnakeGame;
 public class WorldPanel : IDrawable
 {
+    // Speed of the death particles
+    private int speed = 0;
+
     private IImage wall;
     private IImage background;
-
     private bool initializedForDrawing = false;
 
+    // A World object that contains everything that is in the world
     private World theWorld;
     private GraphicsView graphicsView;
-    public delegate void ObjectDrawer(object o, ICanvas canvas);
+
 
     private IImage loadImage(string name)
     {
@@ -41,15 +44,20 @@ public class WorldPanel : IDrawable
         }
     }
 
-    public WorldPanel() 
+    public WorldPanel()
     {
 
     }
 
+    /// <summary>
+    /// Sets theWorld and graphicsView to updated versions.
+    /// </summary>
+    /// <param name="world">The updated world</param>
+    /// <param name="graphicsView">GraphicsView to use and get data from</param>
     public void SetWorld(World world, GraphicsView graphicsView)
     {
         this.graphicsView = graphicsView;
-        theWorld = world;
+        lock (this) { theWorld = world; }
     }
 
     private void InitializeDrawing()
@@ -59,33 +67,15 @@ public class WorldPanel : IDrawable
         initializedForDrawing = true;
     }
 
-    /*/// <summary>
-    /// This method performs a translation and rotation to draw an object.
-    /// </summary>
-    /// <param name="canvas">The canvas object for drawing onto</param>
-    /// <param name="o">The object to draw</param>
-    /// <param name="worldX">The X component of the object's position in world space</param>
-    /// <param name="worldY">The Y component of the object's position in world space</param>
-    /// <param name="angle">The orientation of the object, measured in degrees clockwise from "up"</param>
-    /// <param name="drawer">The drawer delegate. After the transformation is applied, the delegate is invoked to draw whatever it wants</param>
-    private void DrawObjectWithTransform(ICanvas canvas, object o, double worldX, double worldY, double angle, ObjectDrawer drawer)
-    {
-        // "push" the current transform
-        canvas.SaveState();
-
-        canvas.Translate((float)worldX, (float)worldY);
-        canvas.Rotate((float)angle);
-        drawer(o, canvas);
-
-        // "pop" the transform
-        canvas.RestoreState();
-    }*/
-
     /// <summary>
-    /// A method that can be used as an ObjectDrawer delegate
+    /// A method to draw snakes.
     /// </summary>
-    /// <param name="o">The snake to draw</param>
-    /// <param name="canvas"></param>
+    /// <param name="canvas">The canvas to draw on</param>
+    /// <param name="x1">First x value of snake</param>
+    /// <param name="y1">First y value of snake</param>
+    /// <param name="x2">Second x value of snake</param>
+    /// <param name="y2">Second y value of snake</param>
+    /// <param name="snakeID">The snake's ID</param>
     private void DrawSnake(ICanvas canvas, double x1, double y1, double x2, double y2, int snakeID)
     {
         switch (snakeID % 8)
@@ -121,9 +111,23 @@ public class WorldPanel : IDrawable
         canvas.DrawLine((float)x1, (float)y1, (float)x2, (float)y2);
     }
 
-    private void DrawParticles(ICanvas canvas)
+    /// <summary>
+    /// A method to draw the death particles for a snake.
+    /// </summary>
+    /// <param name="canvas">The canvas to draw on</param>
+    /// <param name="snakeX">The snake's head's x position</param>
+    /// <param name="snakeY">The snake's head's y position</param>
+    private void DrawParticles(ICanvas canvas, float snakeX, float snakeY)
     {
-        
+
+        canvas.FillColor = Colors.Red;
+        //if (speed <= 60)
+        //{
+            for (int i = 0; i < 20; i++)
+            {
+                canvas.FillCircle(snakeX + speed * (float)Math.Cos(i), snakeY + speed * (float)Math.Sin(i), 2);
+            }
+        //}
     }
 
     public void Draw(ICanvas canvas, RectF dirtyRect)
@@ -140,13 +144,7 @@ public class WorldPanel : IDrawable
             InitializeDrawing();
 
         // Draw background
-        canvas.FillColor = Colors.Green;
         canvas.DrawImage(background, (float)-theWorld.Size / 2, (float)-theWorld.Size / 2, (float)theWorld.Size, (float)theWorld.Size);
-
-        canvas.FillColor = Colors.Black;
-        canvas.FillRectangle(0, 0, 10, 10);
-        canvas.FillColor = Colors.Red;
-        canvas.FillRectangle(0, 0, -50, -50);
 
         // undo previous transformations from last frame
         canvas.ResetState();
@@ -154,11 +152,13 @@ public class WorldPanel : IDrawable
         // Draw walls
         foreach (Wall wallData in theWorld.walls.Values)
         {
+            // The width and height will always be positive, so we need to decide which point is in the top left of the rectangle
             double width = Math.Abs(wallData.p2.GetX() - wallData.p1.GetX()) + 50;
             double height = Math.Abs(wallData.p2.GetY() - wallData.p1.GetY()) + 50;
             int wallWidthSegments = (int)(width / 50);
             int wallHeightSegments = (int)(height / 50);
 
+            // If p1 is in the top left
             if (wallData.p1.GetX() < wallData.p2.GetX() || wallData.p1.GetY() < wallData.p2.GetY())
             {
                 for (int i = 0; i < wallHeightSegments; i++)
@@ -181,42 +181,53 @@ public class WorldPanel : IDrawable
             }
             
         }
+
         // Draw snakes
-        foreach (Snake snake in theWorld.snakes.Values)
+        lock(this)
         {
-            if (snake.alive)
+            foreach (Snake snake in theWorld.snakes.Values)
             {
                 float snakeX = (float)snake.body[snake.body.Count - 1].GetX();
                 float snakeY = (float)snake.body[snake.body.Count - 1].GetY();
-                Vector2D lastSegment = null;
-                foreach (Vector2D bodyPart in snake.body)
+                if (snake.alive)
                 {
-                    if (lastSegment == null)
+                    speed = 0;
+                    Vector2D lastSegment = null;
+                    foreach (Vector2D bodyPart in snake.body)
                     {
-                        lastSegment = bodyPart;
+                        if (lastSegment == null)
+                        {
+                            lastSegment = bodyPart;
+                        }
+                        else
+                        {
+                            DrawSnake(canvas, bodyPart.GetX(), bodyPart.GetY(), lastSegment.GetX(), lastSegment.GetY(), snake.snake);
+                            lastSegment = bodyPart;
+                        }
                     }
-                    else
-                    {
-                        DrawSnake(canvas, bodyPart.GetX(), bodyPart.GetY(), lastSegment.GetX(), lastSegment.GetY(), snake.snake);
-                        lastSegment = bodyPart;
-                    }
+                    // Draw snake name and score
+                    canvas.DrawString(snake.name + " " + snake.score, snakeX, snakeY - 25, HorizontalAlignment.Center);
                 }
-                // Draw snake name and score
-                canvas.DrawString(snake.name + " " + snake.score, snakeX, snakeY - 25, HorizontalAlignment.Center);
-            }
-            else
-            {
-                DrawParticles(canvas);
+                else
+                {
+                    // Draw particles when the snake dies
+                    speed += 3;
+                    DrawParticles(canvas, snakeX, snakeY);
+                }
             }
         }
+        
         // Draw powerups
-        foreach (Powerup p in theWorld.powerups.Values)
-        {
-            int radius = 8;
-            if (!p.died)
+        lock (this)
+        { 
+            foreach (Powerup p in theWorld.powerups.Values)
             {
-                canvas.FillColor = Colors.Blue;
-                canvas.FillCircle((float)p.loc.GetX(), (float)p.loc.GetY(), radius);
+                int radius = 8;
+                if (!p.died)
+                {
+                    canvas.FillColor = Colors.Blue;
+                    canvas.FillCircle((float)p.loc.GetX(), (float)p.loc.GetY(), radius);
+                }
             }
             
         }
