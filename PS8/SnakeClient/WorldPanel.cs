@@ -1,18 +1,11 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics;
-using IImage = Microsoft.Maui.Graphics.IImage;
+﻿using IImage = Microsoft.Maui.Graphics.IImage;
 #if MACCATALYST
 using Microsoft.Maui.Graphics.Platform;
 #else
 using Microsoft.Maui.Graphics.Win2D;
 #endif
 using System.Reflection;
-using Microsoft.Maui;
-using System.Net;
-using Font = Microsoft.Maui.Graphics.Font;
-using SizeF = Microsoft.Maui.Graphics.SizeF;
 using Model;
-using System.Diagnostics.Metrics;
 
 namespace SnakeGame;
 public class WorldPanel : IDrawable
@@ -22,6 +15,10 @@ public class WorldPanel : IDrawable
 
     private IImage wall;
     private IImage background;
+    private IImage planet0;
+    private IImage planet1;
+    private IImage planet2;
+    private IImage planet3;
     private bool initializedForDrawing = false;
 
     // A World object that contains everything that is in the world
@@ -61,8 +58,12 @@ public class WorldPanel : IDrawable
 
     private void InitializeDrawing()
     {
-        wall = loadImage( "wallsprite.png" );
+        wall = loadImage( "astroid.png" );
         background = loadImage( "space.png" );
+        planet0 = loadImage( "planet0.png" );
+        planet1 = loadImage( "planet1.png" );
+        planet2 = loadImage( "planet2.png" );
+        planet3 = loadImage( "planet3.png" );
         initializedForDrawing = true;
     }
 
@@ -77,37 +78,75 @@ public class WorldPanel : IDrawable
     /// <param name="snakeID">The snake's ID</param>
     private void DrawSnake(ICanvas canvas, double x1, double y1, double x2, double y2, int snakeID)
     {
-        switch (snakeID % 8)
+        switch (snakeID % 12)
         {
             case 0:
-                canvas.StrokeColor = Colors.Red;
+                canvas.StrokeColor = Color.FromRgb(173, 21, 15);
                 break;
             case 1:
-                canvas.StrokeColor = Colors.Orange;
+                canvas.StrokeColor = Color.FromRgb(127, 28, 24);
                 break;
             case 2:
-                canvas.StrokeColor = Colors.Yellow;
+                canvas.StrokeColor = Color.FromRgb(127, 60, 40);
                 break;
             case 3:
-                canvas.StrokeColor = Colors.Green;
+                canvas.StrokeColor = Color.FromRgb(127, 95, 32);
                 break;
             case 4:
-                canvas.StrokeColor = Colors.Blue;
+                canvas.StrokeColor = Color.FromRgb(127, 114, 42);
                 break;
             case 5:
-                canvas.StrokeColor = Colors.Indigo;
+                canvas.StrokeColor = Color.FromRgb(114, 128, 65);
                 break;
             case 6:
-                canvas.StrokeColor = Colors.Violet;
+                canvas.StrokeColor = Color.FromRgb(76, 128, 89);
                 break;
             case 7:
-                canvas.StrokeColor = Colors.Black;
+                canvas.StrokeColor = Color.FromRgb(75, 128, 112);
                 break;
+            case 8:
+                canvas.StrokeColor = Color.FromRgb(56, 104, 127);
+                break;
+            case 9:
+                canvas.StrokeColor = Color.FromRgb(72, 83, 127);
+                break;
+            case 10:
+                canvas.StrokeColor = Color.FromRgb(82, 59, 127);
+                break;
+            case 11:
+                canvas.StrokeColor = Color.FromRgb(75, 42, 108);
+                break;
+
         }
 
         canvas.StrokeSize = 10;
         canvas.StrokeLineCap = LineCap.Round;
         canvas.DrawLine((float)x1, (float)y1, (float)x2, (float)y2);
+    }
+
+    /// <summary>
+    /// A method to draw powerups.
+    /// </summary>
+    /// <param name="canvas">The canvas to draw on</param>
+    /// <param name="p">The powerup to draw</param>
+    private void DrawPowerup(ICanvas canvas, Powerup p)
+    {
+        int size = 16;
+        switch (p.power % 4)
+        {
+            case 0:
+                canvas.DrawImage(planet0, (float)p.loc.GetX() - size / 2, (float)p.loc.GetY() - size / 2, size, size);
+                break;
+            case 1:
+                canvas.DrawImage(planet1, (float)p.loc.GetX() - size / 2, (float)p.loc.GetY() - size / 2, size, size);
+                break;
+            case 2:
+                canvas.DrawImage(planet2, (float)p.loc.GetX() - size / 2, (float)p.loc.GetY() - size / 2, size, size);
+                break;
+            case 3:
+                canvas.DrawImage(planet3, (float)p.loc.GetX() - size / 2, (float)p.loc.GetY() - size / 2, size, size);
+                break;
+        }
     }
 
     /// <summary>
@@ -211,7 +250,8 @@ public class WorldPanel : IDrawable
                         }
                     }
                     // Draw snake name and score
-                    canvas.DrawString(snake.name + " " + snake.score, snakeX, snakeY - 25, HorizontalAlignment.Center);
+                    canvas.FontColor = Colors.White;
+                    canvas.DrawString(snake.name + ": " + snake.score, snakeX, snakeY - 25, HorizontalAlignment.Center);
                 }
                 else
                 {
@@ -229,14 +269,7 @@ public class WorldPanel : IDrawable
             {
                 if (!p.died)
                 {
-                    canvas.FillColor = Colors.Red;
-                    canvas.FillCircle((float)p.loc.GetX(), (float)p.loc.GetY(), 8);
-                    canvas.FillColor = Colors.Yellow;
-                    canvas.FillCircle((float)p.loc.GetX(), (float)p.loc.GetY(), 6);
-                    canvas.FillColor = Colors.LightGreen;
-                    canvas.FillCircle((float)p.loc.GetX(), (float)p.loc.GetY(), 4);
-                    canvas.FillColor = Colors.Blue;
-                    canvas.FillCircle((float)p.loc.GetX(), (float)p.loc.GetY(), 2);
+                    DrawPowerup(canvas, p);
                 }
             }
         }
