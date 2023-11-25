@@ -62,7 +62,7 @@ public class WorldPanel : IDrawable
     private void InitializeDrawing()
     {
         wall = loadImage( "wallsprite.png" );
-        background = loadImage( "background.png" );
+        background = loadImage( "space.png" );
         initializedForDrawing = true;
     }
 
@@ -118,10 +118,11 @@ public class WorldPanel : IDrawable
     /// <param name="snakeY">The snake's head's y position</param>
     private void DrawParticles(ICanvas canvas, float snakeX, float snakeY, int speed)
     {
-        canvas.FillColor = Colors.DarkRed;
+        canvas.FillColor = Color.FromRgb(255 - speed * 2, 255 - speed * 3, 255 - speed);
         for (int i = 0; i < 20; i++)
         {
             canvas.FillCircle(snakeX + (speed + i) * (float)Math.Cos(i), snakeY + (speed + i) * (float)Math.Sin(i), 2);
+            canvas.FillCircle(snakeX + (speed - i) * (float)Math.Cos(-i), snakeY + (speed - i) * (float)Math.Sin(-i), 3);
         }
     }
 
@@ -226,11 +227,16 @@ public class WorldPanel : IDrawable
             // Draw powerups
             foreach (Powerup p in theWorld.powerups.Values)
             {
-                int radius = 8;
                 if (!p.died)
                 {
+                    canvas.FillColor = Colors.Red;
+                    canvas.FillCircle((float)p.loc.GetX(), (float)p.loc.GetY(), 8);
+                    canvas.FillColor = Colors.Yellow;
+                    canvas.FillCircle((float)p.loc.GetX(), (float)p.loc.GetY(), 6);
+                    canvas.FillColor = Colors.LightGreen;
+                    canvas.FillCircle((float)p.loc.GetX(), (float)p.loc.GetY(), 4);
                     canvas.FillColor = Colors.Blue;
-                    canvas.FillCircle((float)p.loc.GetX(), (float)p.loc.GetY(), radius);
+                    canvas.FillCircle((float)p.loc.GetX(), (float)p.loc.GetY(), 2);
                 }
             }
         }

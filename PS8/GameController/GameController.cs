@@ -40,7 +40,7 @@ namespace Controller
         /// <returns>thWorld object</returns>
         public World GetWorld()
         {
-            return theWorld;
+            lock (theWorld) { return theWorld; }
         }
         
         /// <summary>
@@ -113,62 +113,65 @@ namespace Controller
         /// <param name="state">SocketState for the server</param>
         private void ProcessJSON(SocketState state)
         {
-            string[] splitData = Regex.Split(state.GetData(), @"(?<=[\n])");
-
-            // Check for world size and player ID
-            if (double.TryParse(splitData[1], out double size))
+            lock (theWorld)
             {
-                theWorld = new(size, int.Parse(splitData[0]));
-            }
+                string[] splitData = Regex.Split(state.GetData(), @"(?<=[\n])");
 
-            List<string> dataList = new List<string>();
+                // Check for world size and player ID
+                if (double.TryParse(splitData[1], out double size))
+                {
+                    theWorld = new(size, int.Parse(splitData[0]));
+                }
 
-            foreach (string data in splitData)
-            {
-                // Ignore empty strings added by the regex splitter
-                if (data.Length == 0)
-                    continue;
-                // The regex splitter will include the last string even if it doesn't end with a '\n',
-                // So we need to ignore it if this happens. 
-                if (data[data.Length - 1] != '\n')
-                    break;
+                List<string> dataList = new List<string>();
 
-                // build a list of messages to send to the view
-                dataList.Add(data);
+                foreach (string data in splitData)
+                {
+                    // Ignore empty strings added by the regex splitter
+                    if (data.Length == 0)
+                        continue;
+                    // The regex splitter will include the last string even if it doesn't end with a '\n',
+                    // So we need to ignore it if this happens. 
+                    if (data[data.Length - 1] != '\n')
+                        break;
 
-                // Then remove it from the SocketState's growable buffer
-                state.RemoveData(0, data.Length);
-            }
+                    // build a list of messages to send to the view
+                    dataList.Add(data);
 
+                    // Then remove it from the SocketState's growable buffer
+                    state.RemoveData(0, data.Length);
+                }
 
-            // Parse jsonData for snake, wall, and powerup
-            foreach (string data in dataList)
-            {
-                if (data.Contains("{"))
+                // Parse jsonData for snake, wall, and powerup
+                foreach (string data in dataList)
                 {
 
-                    JsonDocument doc = JsonDocument.Parse(data);
+                    if (data.Contains("{"))
+                    {
 
-                    if (doc.RootElement.TryGetProperty("snake", out _))
-                    {
-                        Snake? snake = JsonSerializer.Deserialize<Snake>(doc);
-                        if (theWorld.snakes.ContainsKey(snake!.snake)) { theWorld.snakes[snake!.snake] = snake; }
-                        else
+                        JsonDocument doc = JsonDocument.Parse(data);
+
+                        if (doc.RootElement.TryGetProperty("snake", out _))
                         {
-                            theWorld.snakes.Add(snake!.snake, snake);
+                            Snake? snake = JsonSerializer.Deserialize<Snake>(doc);
+                            if (theWorld.snakes.ContainsKey(snake!.snake)) { theWorld.snakes[snake!.snake] = snake; }
+                            else
+                            {
+                                theWorld.snakes.Add(snake!.snake, snake);
+                            }
                         }
-                    }
-                    if (doc.RootElement.TryGetProperty("power", out _))
-                    {
-                        Powerup? powerup = JsonSerializer.Deserialize<Powerup>(doc);
-                        if (theWorld.powerups.ContainsKey(powerup!.power)) { theWorld.powerups[powerup!.power] = powerup; }
-                        else { theWorld.powerups.Add(powerup!.power, powerup); }
-                    }
-                    if (doc.RootElement.TryGetProperty("wall", out _))
-                    {
-                        Wall? wall = JsonSerializer.Deserialize<Wall>(doc);
-                        if (theWorld.walls.ContainsKey(wall!.wall)) { theWorld.walls[wall!.wall] = wall; }
-                        else { theWorld.walls.Add(wall!.wall, wall); }
+                        if (doc.RootElement.TryGetProperty("power", out _))
+                        {
+                            Powerup? powerup = JsonSerializer.Deserialize<Powerup>(doc);
+                            if (theWorld.powerups.ContainsKey(powerup!.power)) { theWorld.powerups[powerup!.power] = powerup; }
+                            else { theWorld.powerups.Add(powerup!.power, powerup); }
+                        }
+                        if (doc.RootElement.TryGetProperty("wall", out _))
+                        {
+                            Wall? wall = JsonSerializer.Deserialize<Wall>(doc);
+                            if (theWorld.walls.ContainsKey(wall!.wall)) { theWorld.walls[wall!.wall] = wall; }
+                            else { theWorld.walls.Add(wall!.wall, wall); }
+                        }
                     }
                 }
             }
