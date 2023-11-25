@@ -127,66 +127,68 @@ public class WorldPanel : IDrawable
 
     public void Draw(ICanvas canvas, RectF dirtyRect)
     {
-        if (theWorld.snakes.ContainsKey(theWorld.PlayerID))
+        lock (this)
         {
-            Snake playerSnake = theWorld.snakes[theWorld.PlayerID];
-            float playerX = (float)playerSnake.body[playerSnake.body.Count - 1].GetX();
-            float playerY = (float)playerSnake.body[playerSnake.body.Count - 1].GetY();
-            canvas.Translate(-playerX + ((float)graphicsView.Width / 2), -playerY + ((float)graphicsView.Height / 2));
-        }
-
-        if ( !initializedForDrawing )
-            InitializeDrawing();
-
-        // Draw background
-        canvas.DrawImage(background, (float)-theWorld.Size / 2, (float)-theWorld.Size / 2, (float)theWorld.Size, (float)theWorld.Size);
-
-        // undo previous transformations from last frame
-        canvas.ResetState();
-
-        // Draw walls
-        foreach (Wall wallData in theWorld.walls.Values)
-        {
-            // The width and height will always be positive, so we need to decide which point is in the top left of the rectangle
-            double width = Math.Abs(wallData.p2.GetX() - wallData.p1.GetX()) + 50;
-            double height = Math.Abs(wallData.p2.GetY() - wallData.p1.GetY()) + 50;
-            int wallWidthSegments = (int)(width / 50);
-            int wallHeightSegments = (int)(height / 50);
-
-            // If p1 is in the top left
-            if (wallData.p1.GetX() < wallData.p2.GetX() || wallData.p1.GetY() < wallData.p2.GetY())
+            if (theWorld.snakes.ContainsKey(theWorld.PlayerID))
             {
-                for (int i = 0; i < wallHeightSegments; i++)
+                Snake playerSnake = theWorld.snakes[theWorld.PlayerID];
+                float playerX = (float)playerSnake.body[playerSnake.body.Count - 1].GetX();
+                float playerY = (float)playerSnake.body[playerSnake.body.Count - 1].GetY();
+                canvas.Translate(-playerX + ((float)graphicsView.Width / 2), -playerY + ((float)graphicsView.Height / 2));
+            }
+
+            if (!initializedForDrawing)
+                InitializeDrawing();
+
+            // Draw background
+            canvas.DrawImage(background, (float)-theWorld.Size / 2, (float)-theWorld.Size / 2, (float)theWorld.Size, (float)theWorld.Size);
+
+            // undo previous transformations from last frame
+            canvas.ResetState();
+
+            // Draw walls
+            foreach (Wall wallData in theWorld.walls.Values)
+            {
+                // The width and height will always be positive, so we need to decide which point is in the top left of the rectangle
+                double width = Math.Abs(wallData.p2.GetX() - wallData.p1.GetX()) + 50;
+                double height = Math.Abs(wallData.p2.GetY() - wallData.p1.GetY()) + 50;
+                int wallWidthSegments = (int)(width / 50);
+                int wallHeightSegments = (int)(height / 50);
+
+                // If p1 is in the top left
+                if (wallData.p1.GetX() < wallData.p2.GetX() || wallData.p1.GetY() < wallData.p2.GetY())
                 {
-                    for (int j = 0; j < wallWidthSegments; j++)
+                    for (int i = 0; i < wallHeightSegments; i++)
                     {
-                        canvas.DrawImage(wall, (float)wallData.p1.GetX() + (j * 50) - 25, (float)wallData.p1.GetY() + (i * 50) - 25, 50, 50);
+                        for (int j = 0; j < wallWidthSegments; j++)
+                        {
+                            canvas.DrawImage(wall, (float)wallData.p1.GetX() + (j * 50) - 25, (float)wallData.p1.GetY() + (i * 50) - 25, 50, 50);
+                        }
                     }
                 }
-            }
-            else
-            {
-                for (int i = 0; i < wallHeightSegments; i++)
+                else
                 {
-                    for (int j = 0; j < wallWidthSegments; j++)
+                    for (int i = 0; i < wallHeightSegments; i++)
                     {
-                        canvas.DrawImage(wall, (float)wallData.p2.GetX() + (j * 50) - 25, (float)wallData.p2.GetY() + (i * 50) - 25, 50, 50);
+                        for (int j = 0; j < wallWidthSegments; j++)
+                        {
+                            canvas.DrawImage(wall, (float)wallData.p2.GetX() + (j * 50) - 25, (float)wallData.p2.GetY() + (i * 50) - 25, 50, 50);
+                        }
                     }
                 }
-            }
-            
-        }
 
-        // Draw snakes
-        lock(this)
-        {
+            }
+
+            // Draw snakes
             foreach (Snake snake in theWorld.snakes.Values)
             {
-                if (snake.died) {
+                if (snake.died)
+                {
                     if (snakeSpeeds.ContainsKey(snake.snake)) { snakeSpeeds[snake.snake] = 0; }
                     else { snakeSpeeds.Add(snake.snake, 0); }
                 }
-                if (snake.dc) { 
+                if (snake.dc)
+                {
                     snakeSpeeds.Remove(snake.snake);
                 }
 
@@ -213,18 +215,15 @@ public class WorldPanel : IDrawable
                 else
                 {
                     // Draw particles when the snake dies
-                    if (snakeSpeeds.ContainsKey(snake.snake)) 
+                    if (snakeSpeeds.ContainsKey(snake.snake))
                     {
                         snakeSpeeds[snake.snake] += 2;
                         if (snakeSpeeds[snake.snake] <= 100) { DrawParticles(canvas, snakeX, snakeY, snakeSpeeds[snake.snake]); }
                     }
                 }
             }
-        }
-        
-        // Draw powerups
-        lock (this)
-        { 
+
+            // Draw powerups
             foreach (Powerup p in theWorld.powerups.Values)
             {
                 int radius = 8;
@@ -234,8 +233,6 @@ public class WorldPanel : IDrawable
                     canvas.FillCircle((float)p.loc.GetX(), (float)p.loc.GetY(), radius);
                 }
             }
-            
         }
     }
-
 }

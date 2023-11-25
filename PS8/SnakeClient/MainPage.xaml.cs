@@ -56,22 +56,22 @@ public partial class MainPage : ContentPage
         if (text == "w")
         {
             // Move up
-            controller.Send("{\"moving\":\"up\"}\n");
+            controller.SetControlSent("{\"moving\":\"up\"}\n");
         }
         else if (text == "a")
         {
             // Move left
-            controller.Send("{\"moving\":\"left\"}\n");
+            controller.SetControlSent("{\"moving\":\"left\"}\n");
         }
         else if (text == "s")
         {
             // Move down
-            controller.Send("{\"moving\":\"down\"}\n");
+            controller.SetControlSent("{\"moving\":\"down\"}\n");
         }
         else if (text == "d")
         {
             // Move right
-            controller.Send("{\"moving\":\"right\"}\n");
+            controller.SetControlSent("{\"moving\":\"right\"}\n");
         }
         entry.Text = "";
     }

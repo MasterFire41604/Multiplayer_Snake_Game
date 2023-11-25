@@ -2,6 +2,7 @@
 using Model;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Diagnostics;
 
 namespace Controller
 {
@@ -11,6 +12,9 @@ namespace Controller
     /// </summary>
     public class GameController
     {
+        // This will be assigned the control to be sent to the server
+        private string controlSent = "";
+
         // Controller events that the view can subscribe to
         public delegate void JSONHandler();
         public event JSONHandler? JSONProcess;
@@ -38,6 +42,13 @@ namespace Controller
         {
             return theWorld;
         }
+        
+        /// <summary>
+        /// A method that sets controlSent
+        /// </summary>
+        /// <param name="controlSent">The command to be sent to the server</param>
+        public void SetControlSent(string controlSent) { this.controlSent = controlSent; }
+
 
         /// <summary>
         /// Connects to the server.
@@ -163,7 +174,9 @@ namespace Controller
             }
             
             JSONProcess?.Invoke();
-
+            // Check to see if any controls are supposed to be sent
+            if (controlSent != "") { Send(controlSent); }
+            controlSent = "";
         }
 
         /// <summary>
