@@ -25,10 +25,12 @@ namespace Server
     {
         private static Dictionary<long, SocketState>? clients;
         private readonly static XmlDocument doc = new();
-        private static World? theWorld;
+        private static World theWorld = new(0, -1);
+        private static int speed;
 
         static void Main (string[] args)
         {
+            speed = 6;
             Server server = new Server();
             server.StartServer();
 
@@ -56,6 +58,7 @@ namespace Server
         /// </summary>
         public Server()
         {
+
             clients = new Dictionary<long, SocketState>();
 
             doc.Load("settings.xml");
@@ -109,22 +112,23 @@ namespace Server
                 return;
             }
 
-            state.OnNetworkAction = ReceiveCommand;
 
 
             // Process information from settings
             XmlNode worldSize = doc.DocumentElement!.SelectSingleNode("/GameSettings/UniverseSize")!;
             XmlNode walls = doc.DocumentElement!.SelectSingleNode("/GameSettings/Walls")!;
 
-            // Process name
+            // Process name and then remove it from the state
             string playerName = state.GetData();
+            state.RemoveData(0, playerName.Length);
+
             Console.WriteLine("Player(" + state.ID + ")\"" + playerName.Substring(0, playerName.Length - 1) + "\" joined");
 
             // Create a new snake
             List<Vector2D> body = new()
             {
-                new Vector2D(1, 0),
-                new Vector2D(5, 0)
+                new Vector2D(0, 0),
+                new Vector2D(120, 0)
             };
             Snake playerSnake = new((int)state.ID, playerName.Substring(0, playerName.Length - 1), body, new Vector2D(1, 0), 0, false, true, false, true);
             //string stringJson = JsonSerializer.Serialize(playerSnake);
@@ -143,6 +147,8 @@ namespace Server
                 clients[state.ID] = state;
             }
 
+            // Next strings sent from client should be movement commands
+            state.OnNetworkAction = ReceiveCommand;
             // Continue the event loop that receives messages from this client
             Networking.GetData(state);
         }
@@ -195,6 +201,8 @@ namespace Server
                 // Remove it from the SocketState's growable buffer
                 state.RemoveData(0, p.Length);
 
+
+
                 // Broadcast the message to all clients
                 // Lock here beccause we can't have new connections 
                 // adding while looping through the clients list.
@@ -204,13 +212,18 @@ namespace Server
                 {
                     foreach (SocketState client in clients.Values)
                     {
-                        if (!Networking.Send(client.TheSocket!, "Message from client " + state.ID + ": " + p))
+                        if (!Networking.Send(client.TheSocket!, ""))
                             disconnectedClients.Add(client.ID);
                     }
                 }
                 foreach (long id in disconnectedClients)
                     RemoveClient(id);
             }
+
+            string command = parts[0];
+            Console.WriteLine(command);
+            ProcessMovement(command, state);
+            
         }
 
         /// <summary>
@@ -234,6 +247,7 @@ namespace Server
                 theWorld!.PlayerID = (int)client.ID;
                 foreach (Snake snake in theWorld.snakes.Values)
                 {
+                    MoveSnake(snake);
                     worldData.Append(JsonSerializer.Serialize(snake) + "\n");
                 }
                 foreach (Powerup powerup in theWorld.powerups.Values)
@@ -242,6 +256,52 @@ namespace Server
                 }
 
                 Networking.Send(client.TheSocket, worldData.ToString());
+            }
+        }
+
+        private static void MoveSnake(Snake snake)
+        {
+            // Move head
+            snake.body[snake.body.Count - 1] += snake.dir * speed;
+            // Move tail
+            Vector2D tailDir = (snake.body[1] - snake.body[0]);
+            // Check if tail is at next vertex
+            if (tailDir.GetX() == 0 && tailDir.GetY() == 0)
+            {
+                snake.body.RemoveAt(0);
+                Console.WriteLine(snake.body[0]);
+            }
+            else { tailDir.Normalize(); }
+            
+            snake.body[0] += tailDir * speed;
+
+        }
+
+        private void ProcessMovement(string command, SocketState state) 
+        {
+            lock (theWorld)
+            {
+                Snake player = theWorld.snakes[(int)state.ID];
+
+                switch (command)
+                {
+                    case "{\"moving\":\"up\"}\n":
+                        player.dir = new Vector2D(0, -1);
+                        player.body.Add(player.body[player.body.Count - 1]);
+                        break;
+                    case "{\"moving\":\"down\"}\n":
+                        player.dir = new Vector2D(0, 1);
+                        player.body.Add(player.body[player.body.Count - 1]);
+                        break;
+                    case "{\"moving\":\"left\"}\n":
+                        player.dir = new Vector2D(-1, 0);
+                        player.body.Add(player.body[player.body.Count - 1]);
+                        break;
+                    case "{\"moving\":\"right\"}\n":
+                        player.dir = new Vector2D(1, 0);
+                        player.body.Add(player.body[player.body.Count - 1]);
+                        break;
+                }
             }
         }
     }
