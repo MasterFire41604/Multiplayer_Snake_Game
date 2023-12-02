@@ -186,37 +186,14 @@ public class WorldPanel : IDrawable
             // undo previous transformations from last frame
             canvas.ResetState();
 
-            // Draw walls
-            foreach (Wall wallData in theWorld.walls.Values)
+
+            // Draw powerups
+            foreach (Powerup p in theWorld.powerups.Values)
             {
-                // The width and height will always be positive, so we need to decide which point is in the top left of the rectangle
-                double width = Math.Abs(wallData.p2.GetX() - wallData.p1.GetX()) + 50;
-                double height = Math.Abs(wallData.p2.GetY() - wallData.p1.GetY()) + 50;
-                int wallWidthSegments = (int)(width / 50);
-                int wallHeightSegments = (int)(height / 50);
-
-                // If p1 is in the top left
-                if (wallData.p1.GetX() < wallData.p2.GetX() || wallData.p1.GetY() < wallData.p2.GetY())
+                if (!p.died)
                 {
-                    for (int i = 0; i < wallHeightSegments; i++)
-                    {
-                        for (int j = 0; j < wallWidthSegments; j++)
-                        {
-                            canvas.DrawImage(wall, (float)wallData.p1.GetX() + (j * 50) - 25, (float)wallData.p1.GetY() + (i * 50) - 25, 50, 50);
-                        }
-                    }
+                    DrawPowerup(canvas, p);
                 }
-                else
-                {
-                    for (int i = 0; i < wallHeightSegments; i++)
-                    {
-                        for (int j = 0; j < wallWidthSegments; j++)
-                        {
-                            canvas.DrawImage(wall, (float)wallData.p2.GetX() + (j * 50) - 25, (float)wallData.p2.GetY() + (i * 50) - 25, 50, 50);
-                        }
-                    }
-                }
-
             }
 
             // Draw snakes
@@ -264,13 +241,37 @@ public class WorldPanel : IDrawable
                 }
             }
 
-            // Draw powerups
-            foreach (Powerup p in theWorld.powerups.Values)
+            // Draw walls
+            foreach (Wall wallData in theWorld.walls.Values)
             {
-                if (!p.died)
+                // The width and height will always be positive, so we need to decide which point is in the top left of the rectangle
+                double width = Math.Abs(wallData.p2.GetX() - wallData.p1.GetX()) + 50;
+                double height = Math.Abs(wallData.p2.GetY() - wallData.p1.GetY()) + 50;
+                int wallWidthSegments = (int)(width / 50);
+                int wallHeightSegments = (int)(height / 50);
+
+                // If p1 is in the top left
+                if (wallData.p1.GetX() < wallData.p2.GetX() || wallData.p1.GetY() < wallData.p2.GetY())
                 {
-                    DrawPowerup(canvas, p);
+                    for (int i = 0; i < wallHeightSegments; i++)
+                    {
+                        for (int j = 0; j < wallWidthSegments; j++)
+                        {
+                            canvas.DrawImage(wall, (float)wallData.p1.GetX() + (j * 50) - 25, (float)wallData.p1.GetY() + (i * 50) - 25, 50, 50);
+                        }
+                    }
                 }
+                else
+                {
+                    for (int i = 0; i < wallHeightSegments; i++)
+                    {
+                        for (int j = 0; j < wallWidthSegments; j++)
+                        {
+                            canvas.DrawImage(wall, (float)wallData.p2.GetX() + (j * 50) - 25, (float)wallData.p2.GetY() + (i * 50) - 25, 50, 50);
+                        }
+                    }
+                }
+
             }
         }
     }

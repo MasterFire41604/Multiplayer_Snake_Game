@@ -9,6 +9,16 @@ namespace Model
     /// </summary>
     public class World
     {
+        // Snake speed
+        public int snakeSpeed;
+        // Snake starting length
+        public int snakeStartLength;
+        // Snake growth
+        public int snakeGrowth;
+        // Max powerups
+        public int maxPower;
+        // Max powerup delay
+        public int powerDelay;
         // A dictionary of active snakes, relating the snake's ID to the snake object
         [JsonInclude]
         public Dictionary<int, Snake> snakes;
@@ -28,6 +38,12 @@ namespace Model
         /// <param name="playerID"></param>
         public World(double size, int playerID) 
         {
+            snakeSpeed = 6;
+            snakeStartLength = 120;
+            snakeGrowth = 24;
+            maxPower = 20;
+            powerDelay = 75;
+
             snakes = new Dictionary<int, Snake>();
             powerups = new Dictionary<int, Powerup>();
             walls = new Dictionary<int, Wall>();
