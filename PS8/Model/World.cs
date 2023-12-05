@@ -9,6 +9,8 @@ namespace Model
     /// </summary>
     public class World
     {
+        // Snake respawn rate (in frames)
+        public int respawnRate;
         // Snake speed
         public int snakeSpeed;
         // Snake starting length
@@ -43,6 +45,7 @@ namespace Model
             snakeGrowth = 24;
             maxPower = 20;
             powerDelay = 75;
+            respawnRate = 100;
 
             snakes = new Dictionary<int, Snake>();
             powerups = new Dictionary<int, Powerup>();

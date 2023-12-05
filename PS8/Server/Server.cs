@@ -9,6 +9,8 @@ using SnakeGame;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System;
+using System.Reflection;
+using System.Diagnostics.Metrics;
 
 namespace Server
 {
@@ -17,6 +19,8 @@ namespace Server
         private static Dictionary<long, SocketState>? clients;
         private static World theWorld = new(0, -1);
         private static Dictionary<long, string> commands = new();
+        private static List<Snake> deadSnakes = new();
+        private static List<Snake> growingSnakes = new();
 
         static void Main (string[] args)
         {
@@ -57,9 +61,11 @@ namespace Server
 
             // Process information from settings
             XmlNode worldSize = doc.DocumentElement!.SelectSingleNode("/GameSettings/UniverseSize")!;
-
+            XmlNode respawnRate = doc.DocumentElement!.SelectSingleNode("/GameSettings/RespawnRate")!;
 
             theWorld = new(double.Parse(worldSize.InnerText), -1);
+            theWorld.respawnRate = int.Parse(respawnRate.InnerText);
+
             CreateInitialPowerups(theWorld.maxPower);
             LoadWalls(doc);
         }
@@ -122,12 +128,16 @@ namespace Server
             // Create a new snake
             List<Vector2D> body = new()
             {
-                new Vector2D(1, 1),
-                new Vector2D(121, 1)
+                new Vector2D(0, 0),
+                new Vector2D(theWorld.snakeStartLength, 0)
             };
             Snake playerSnake = new(playerID, playerName.Substring(0, playerName.Length - 1), body, new Vector2D(1, 0), 0, false, true, false, true);
-            //string stringJson = JsonSerializer.Serialize(playerSnake);
-            theWorld.snakes.Add((int)state.ID, playerSnake);
+            RespawnSnake(playerSnake);
+
+            lock (theWorld)
+            { 
+                theWorld.snakes.Add((int)state.ID, playerSnake);
+            }
 
 
             // Send startup info
@@ -223,7 +233,6 @@ namespace Server
 
 
             commands[state.ID] = parts[0];
-            //ProcessMovement(command);
         }
 
         /// <summary>
@@ -235,6 +244,8 @@ namespace Server
             Console.WriteLine("Client " + id + " disconnected");
             lock (clients!)
             {
+                theWorld.snakes[(int)id].dc = true;
+                theWorld.snakes[(int)id].alive = false;
                 clients.Remove(id);
             }
         }
@@ -246,10 +257,50 @@ namespace Server
                 StringBuilder worldData = new();
                 theWorld!.PlayerID = (int)client.ID;
                 Snake clientSnake = theWorld.snakes[(int)client.ID];
+            
+                
 
                 ProcessMovement((int)client.ID);
-                MoveSnake(clientSnake);
+                if (clientSnake.alive) { MoveSnake(clientSnake); }
 
+                // Respawn dead snake after respawnRate frames
+                foreach (Snake snake in deadSnakes)
+                {
+                    snake.died = false;
+                    snake.framesDead++;
+                    if (snake.framesDead >= theWorld.respawnRate)
+                    {
+                        RespawnSnake(snake);
+                        snake.framesDead = 0;
+
+                    }
+                }
+                for (int i = 0; i < deadSnakes.Count; i++) 
+                {
+                    if (deadSnakes[i].alive) 
+                    {
+                        deadSnakes.Remove(deadSnakes[i]);
+                    }
+                }
+
+                // Move tail after snakeGrowth frames
+                foreach (Snake snake in growingSnakes)
+                {
+                    snake.framesGrowing++;
+                    if (snake.framesGrowing >= theWorld.snakeGrowth)
+                    {
+                        snake.growing = false;
+                        snake.framesGrowing = 0;
+
+                    }
+                }
+                for (int i = 0; i < growingSnakes.Count; i++)
+                {
+                    if (!growingSnakes[i].growing)
+                    {
+                        growingSnakes.Remove(growingSnakes[i]);
+                    }
+                }
 
                 foreach (Snake snake in theWorld.snakes.Values)
                 {
@@ -269,18 +320,32 @@ namespace Server
         {
             // Move head
             snake.body[snake.body.Count - 1] += snake.dir * theWorld.snakeSpeed;
-            // Move tail
-            Vector2D tailDir = (snake.body[1] - snake.body[0]);
-            // Check if tail is at next vertex
-            if (tailDir.GetX() == 0 && tailDir.GetY() == 0)
+            // Check for collisions with walls
+            if (WallCollisionCheck(snake))
             {
-                snake.body.RemoveAt(0);
-                tailDir = (snake.body[1] - snake.body[0]);
-                tailDir.Normalize();
+                snake.alive = false;
+                snake.died = true;
+                deadSnakes.Add(snake);
+                return;
             }
-            else { tailDir.Normalize(); }
-            
-            snake.body[0] += tailDir * theWorld.snakeSpeed;
+
+            // Check for collisions with powerups
+            PowerupCollisionCheck(snake);
+            if (!snake.growing)
+            {
+                // Move tail
+                Vector2D tailDir = (snake.body[1] - snake.body[0]);
+                // Check if tail is at next vertex
+                if (tailDir.GetX() == 0 && tailDir.GetY() == 0)
+                {
+                    snake.body.RemoveAt(0);
+                    tailDir = (snake.body[1] - snake.body[0]);
+                    tailDir.Normalize();
+                }
+                else { tailDir.Normalize(); }
+
+                snake.body[0] += tailDir * theWorld.snakeSpeed;
+            }
 
             //TODO: Implement wraparound
             /*if (snake.body[snake.body.Count - 1].GetX() > theWorld.Size / 2)
@@ -298,28 +363,28 @@ namespace Server
                 switch (commands[ID])
                 {
                     case "{\"moving\":\"up\"}\n":
-                        if (player.dir.GetY() != -1)
+                        if (player.dir.GetY() != -1 && player.dir.GetY() != 1)
                         { 
                             player.dir = new Vector2D(0, -1);
                             player.body.Add(player.body[player.body.Count - 1]);
                         }
                         break;
                     case "{\"moving\":\"down\"}\n":
-                        if (player.dir.GetY() != 1)
+                        if (player.dir.GetY() != 1 && player.dir.GetY() != -1)
                         {
                             player.dir = new Vector2D(0, 1);
                             player.body.Add(player.body[player.body.Count - 1]);
                         }
                         break;
                     case "{\"moving\":\"left\"}\n":
-                        if (player.dir.GetX() != -1)
+                        if (player.dir.GetX() != -1 && player.dir.GetX() != 1)
                         {
                             player.dir = new Vector2D(-1, 0);
                             player.body.Add(player.body[player.body.Count - 1]);
                         }
                         break;
                     case "{\"moving\":\"right\"}\n":
-                        if (player.dir.GetX() != 1)
+                        if (player.dir.GetX() != 1 && player.dir.GetX() != -1)
                         {
                             player.dir = new Vector2D(1, 0);
                             player.body.Add(player.body[player.body.Count - 1]);
@@ -356,6 +421,117 @@ namespace Server
                 theWorld.walls.Add(wallID, wall);
             }
 
+        }
+
+        private static bool WallCollisionCheck(Snake snake) 
+        {
+            Vector2D snakeHead = snake.body[snake.body.Count - 1];
+            //if (snakeHead.GetX() <= -1000 || snakeHead.GetY() <= -1000 || snakeHead.GetX() >= 1000 || snakeHead.GetX() >= 1000) { return true; }
+            // Check wall collision
+            foreach (Wall wall in theWorld.walls.Values)
+            {
+                Vector2D p1 = wall.p1;
+                Vector2D p2 = wall.p2;
+
+                if (p1.GetX() > p2.GetX() || p1.GetY() > p2.GetY())
+                {
+                    p1 = wall.p2;
+                    p2 = wall.p1;
+                }
+
+                if (snakeHead.GetX() > p1.GetX() - 30 && snakeHead.GetX() < p2.GetX() + 30)
+                {
+                    if (snakeHead.GetY() > p1.GetY() -30 && snakeHead.GetY() < p2.GetY() + 30)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static void PowerupCollisionCheck(Snake snake)
+        {
+            Vector2D snakeHead = snake.body[snake.body.Count - 1];
+            //if (snakeHead.GetX() <= -1000 || snakeHead.GetY() <= -1000 || snakeHead.GetX() >= 1000 || snakeHead.GetX() >= 1000) { return true; }
+            // Check wall collision
+            foreach (Powerup powerup in theWorld.powerups.Values)
+            {
+                if (snakeHead.GetX() < powerup.loc.GetX() + 10 && snakeHead.GetX() > powerup.loc.GetX() - 10) 
+                {
+                    if (snakeHead.GetY() < powerup.loc.GetY() + 10 && snakeHead.GetY() > powerup.loc.GetY() - 10)
+                    {
+                        powerup.died = true;
+                        snake.growing = true;
+                        snake.score++;
+                        growingSnakes.Add(snake);
+                        theWorld.powerups.Remove(powerup.power);
+                        return;
+                    }
+                }
+            }
+        }
+
+        private static void RespawnSnake(Snake snake) 
+        {
+            snake.alive = true;
+
+            // Set random direction
+            switch (new Random().Next(4))
+            {
+                case 0:
+                    snake.dir = new Vector2D(0, 1);
+                    break;
+                case 1:
+                    snake.dir = new Vector2D(0, -1);
+                    break;
+                case 2:
+                    snake.dir = new Vector2D(1, 0);
+                    break;
+                case 3:
+                    snake.dir = new Vector2D(-1, 0);
+                    break;
+            }
+            int headRandX = new Random().Next((int)-theWorld.Size / 2 + 100, (int)theWorld.Size / 2 - 100);
+            int headRandY = new Random().Next((int)-theWorld.Size / 2 + 100, (int)theWorld.Size / 2 - 100);
+
+            // Sets random positon
+            List<Vector2D> body;
+            if (snake.dir.GetY() == -1)
+            {
+                body = new()
+                {
+                    new Vector2D(headRandX, headRandY + theWorld.snakeStartLength),
+                    new Vector2D(headRandX, headRandY)
+                };
+            }
+            else if (snake.dir.GetY() == 1)
+            {
+                body = new()
+                {
+                    new Vector2D(headRandX, headRandY - theWorld.snakeStartLength),
+                    new Vector2D(headRandX, headRandY)
+                };
+            }
+            else if (snake.dir.GetX() == -1)
+            {
+                body = new()
+                {
+                    new Vector2D(headRandX + theWorld.snakeStartLength, headRandY),
+                    new Vector2D(headRandX, headRandY)
+                };
+            }
+            else
+            {
+                body = new()
+                {
+                    new Vector2D(headRandX - theWorld.snakeStartLength, headRandY),
+                    new Vector2D(headRandX, headRandY)
+                };
+            }
+
+            snake.body = body;
         }
     }
 }

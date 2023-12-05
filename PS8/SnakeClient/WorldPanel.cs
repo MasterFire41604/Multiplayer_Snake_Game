@@ -196,6 +196,39 @@ public class WorldPanel : IDrawable
                 }
             }
 
+            // Draw walls
+            foreach (Wall wallData in theWorld.walls.Values)
+            {
+                // The width and height will always be positive, so we need to decide which point is in the top left of the rectangle
+                double width = Math.Abs(wallData.p2.GetX() - wallData.p1.GetX()) + 50;
+                double height = Math.Abs(wallData.p2.GetY() - wallData.p1.GetY()) + 50;
+                int wallWidthSegments = (int)(width / 50);
+                int wallHeightSegments = (int)(height / 50);
+
+                // If p1 is in the top left
+                if (wallData.p1.GetX() < wallData.p2.GetX() || wallData.p1.GetY() < wallData.p2.GetY())
+                {
+                    for (int i = 0; i < wallHeightSegments; i++)
+                    {
+                        for (int j = 0; j < wallWidthSegments; j++)
+                        {
+                            canvas.DrawImage(wall, (float)wallData.p1.GetX() + (j * 50) - 25, (float)wallData.p1.GetY() + (i * 50) - 25, 50, 50);
+                        }
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < wallHeightSegments; i++)
+                    {
+                        for (int j = 0; j < wallWidthSegments; j++)
+                        {
+                            canvas.DrawImage(wall, (float)wallData.p2.GetX() + (j * 50) - 25, (float)wallData.p2.GetY() + (i * 50) - 25, 50, 50);
+                        }
+                    }
+                }
+
+            }
+
             // Draw snakes
             foreach (Snake snake in theWorld.snakes.Values)
             {
@@ -207,6 +240,8 @@ public class WorldPanel : IDrawable
                 if (snake.dc)
                 {
                     snakeSpeeds.Remove(snake.snake);
+                    snake.alive = false;
+                    theWorld.snakes.Remove(snake.snake);
                 }
 
                 float snakeX = (float)snake.body[snake.body.Count - 1].GetX();
@@ -239,39 +274,6 @@ public class WorldPanel : IDrawable
                         if (snakeSpeeds[snake.snake] <= 100) { DrawParticles(canvas, snakeX, snakeY, snakeSpeeds[snake.snake]); }
                     }
                 }
-            }
-
-            // Draw walls
-            foreach (Wall wallData in theWorld.walls.Values)
-            {
-                // The width and height will always be positive, so we need to decide which point is in the top left of the rectangle
-                double width = Math.Abs(wallData.p2.GetX() - wallData.p1.GetX()) + 50;
-                double height = Math.Abs(wallData.p2.GetY() - wallData.p1.GetY()) + 50;
-                int wallWidthSegments = (int)(width / 50);
-                int wallHeightSegments = (int)(height / 50);
-
-                // If p1 is in the top left
-                if (wallData.p1.GetX() < wallData.p2.GetX() || wallData.p1.GetY() < wallData.p2.GetY())
-                {
-                    for (int i = 0; i < wallHeightSegments; i++)
-                    {
-                        for (int j = 0; j < wallWidthSegments; j++)
-                        {
-                            canvas.DrawImage(wall, (float)wallData.p1.GetX() + (j * 50) - 25, (float)wallData.p1.GetY() + (i * 50) - 25, 50, 50);
-                        }
-                    }
-                }
-                else
-                {
-                    for (int i = 0; i < wallHeightSegments; i++)
-                    {
-                        for (int j = 0; j < wallWidthSegments; j++)
-                        {
-                            canvas.DrawImage(wall, (float)wallData.p2.GetX() + (j * 50) - 25, (float)wallData.p2.GetY() + (i * 50) - 25, 50, 50);
-                        }
-                    }
-                }
-
             }
         }
     }

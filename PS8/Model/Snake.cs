@@ -1,4 +1,5 @@
 ﻿using SnakeGame;
+using System.Diagnostics;
 using System.Drawing;
 using System.Text.Json.Serialization;
 
@@ -9,6 +10,15 @@ namespace Model
     /// </summary>
     public class Snake
     {
+        // Boolean for whether the snake is growing or not
+        [JsonIgnore]
+        public bool growing;
+        // Amount of frames a snake has been growing
+        [JsonIgnore]
+        public int framesGrowing;
+        // Amount of frames a snake has been dead
+        [JsonIgnore]
+        public int framesDead;
         // The ID of the snake
         [JsonInclude]
         public int snake;
@@ -61,6 +71,9 @@ namespace Model
             this.alive = alive;
             this.dc = dc;
             this.join = join;
+            framesDead = 0;
+            framesGrowing = 0;
+            growing = false;
         }
     }
 }
