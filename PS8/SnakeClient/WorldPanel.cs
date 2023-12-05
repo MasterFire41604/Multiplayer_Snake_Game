@@ -186,6 +186,16 @@ public class WorldPanel : IDrawable
             // undo previous transformations from last frame
             canvas.ResetState();
 
+
+            // Draw powerups
+            foreach (Powerup p in theWorld.powerups.Values)
+            {
+                if (!p.died)
+                {
+                    DrawPowerup(canvas, p);
+                }
+            }
+
             // Draw walls
             foreach (Wall wallData in theWorld.walls.Values)
             {
@@ -230,6 +240,8 @@ public class WorldPanel : IDrawable
                 if (snake.dc)
                 {
                     snakeSpeeds.Remove(snake.snake);
+                    snake.alive = false;
+                    theWorld.snakes.Remove(snake.snake);
                 }
 
                 float snakeX = (float)snake.body[snake.body.Count - 1].GetX();
@@ -261,15 +273,6 @@ public class WorldPanel : IDrawable
                         snakeSpeeds[snake.snake] += 2;
                         if (snakeSpeeds[snake.snake] <= 100) { DrawParticles(canvas, snakeX, snakeY, snakeSpeeds[snake.snake]); }
                     }
-                }
-            }
-
-            // Draw powerups
-            foreach (Powerup p in theWorld.powerups.Values)
-            {
-                if (!p.died)
-                {
-                    DrawPowerup(canvas, p);
                 }
             }
         }
