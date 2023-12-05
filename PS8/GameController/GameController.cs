@@ -117,7 +117,7 @@ namespace Controller
                 string[] splitData = Regex.Split(state.GetData(), @"(?<=[\n])");
 
                 // Check for world size and player ID
-                if (double.TryParse(splitData[1], out double size))
+                if (splitData.Length > 1 && double.TryParse(splitData[1], out double size))
                 {
                     theWorld = new(size, int.Parse(splitData[0]));
                 }

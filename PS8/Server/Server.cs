@@ -66,8 +66,8 @@ namespace Server
             theWorld = new(double.Parse(worldSize.InnerText), -1);
             theWorld.respawnRate = int.Parse(respawnRate.InnerText);
 
-            CreateInitialPowerups(theWorld.maxPower);
             LoadWalls(doc);
+            CreateInitialPowerups(theWorld.maxPower);
         }
 
         /// <summary>
@@ -282,12 +282,10 @@ namespace Server
                 // Move tail after snakeGrowth frames
                 foreach (Snake snake in growingSnakes)
                 {
-                    snake.framesGrowing++;
-                    if (snake.framesGrowing >= theWorld.snakeGrowth)
+                    snake.framesGrowing--;
+                    if (snake.framesGrowing <= 0)
                     {
                         snake.growing = false;
-                        snake.framesGrowing = 0;
-
                     }
                 }
                 for (int i = 0; i < growingSnakes.Count; i++)
@@ -332,7 +330,7 @@ namespace Server
             // Move head
             snake.body[snake.body.Count - 1] += snake.dir * theWorld.snakeSpeed;
             // Check for collisions with walls
-            if (WallCollisionCheck(snake))
+            if (WallCollisionCheck(snake.body[snake.body.Count - 1], 0))
             {
                 snake.alive = false;
                 snake.died = true;
@@ -414,6 +412,12 @@ namespace Server
                     (new Random().Next((int)-theWorld.Size / 2, (int)theWorld.Size / 2),
                     new Random().Next((int)-theWorld.Size / 2, (int)theWorld.Size / 2));
 
+                if (WallCollisionCheck(loc, 10))
+                {
+                    i--;
+                    continue;
+                }
+
                 theWorld.powerups.Add(i, new(i, loc, false));
             }
         }
@@ -434,9 +438,8 @@ namespace Server
 
         }
 
-        private static bool WallCollisionCheck(Snake snake) 
+        private static bool WallCollisionCheck(Vector2D loc, int additionalAmount) 
         {
-            Vector2D snakeHead = snake.body[snake.body.Count - 1];
             //if (snakeHead.GetX() <= -1000 || snakeHead.GetY() <= -1000 || snakeHead.GetX() >= 1000 || snakeHead.GetX() >= 1000) { return true; }
             // Check wall collision
             foreach (Wall wall in theWorld.walls.Values)
@@ -450,9 +453,9 @@ namespace Server
                     p2 = wall.p1;
                 }
 
-                if (snakeHead.GetX() > p1.GetX() - 30 && snakeHead.GetX() < p2.GetX() + 30)
+                if (loc.GetX() > p1.GetX() - 30 - additionalAmount && loc.GetX() < p2.GetX() + 30 + additionalAmount)
                 {
-                    if (snakeHead.GetY() > p1.GetY() -30 && snakeHead.GetY() < p2.GetY() + 30)
+                    if (loc.GetY() > p1.GetY() - 30 - additionalAmount && loc.GetY() < p2.GetY() + 30 + additionalAmount)
                     {
                         return true;
                     }
@@ -475,6 +478,7 @@ namespace Server
                     {
                         powerup.died = true;
                         snake.growing = true;
+                        snake.framesGrowing += theWorld.snakeGrowth;
                         snake.score++;
                         growingSnakes.Add(snake);
                         return;
@@ -543,6 +547,11 @@ namespace Server
             }
 
             snake.body = body;
+
+            if (WallCollisionCheck(snake.body[snake.body.Count - 1], 150))
+            {
+                RespawnSnake(snake);
+            }
         }
     }
 }
