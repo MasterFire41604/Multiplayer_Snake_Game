@@ -258,10 +258,6 @@ namespace Server
                 theWorld!.PlayerID = (int)client.ID;
                 Snake clientSnake = theWorld.snakes[(int)client.ID];
             
-                
-
-                ProcessMovement((int)client.ID);
-                if (clientSnake.alive) { MoveSnake(clientSnake); }
 
                 // Respawn dead snake after respawnRate frames
                 foreach (Snake snake in deadSnakes)
@@ -302,6 +298,11 @@ namespace Server
                     }
                 }
 
+
+                ProcessMovement((int)client.ID);
+                if (clientSnake.alive) { MoveSnake(clientSnake); }
+
+
                 foreach (Snake snake in theWorld.snakes.Values)
                 {
                     worldData.Append(JsonSerializer.Serialize(snake) + "\n");
@@ -310,7 +311,17 @@ namespace Server
                 foreach (Powerup powerup in theWorld.powerups.Values)
                 {
                     worldData.Append(JsonSerializer.Serialize(powerup) + "\n");
+                    if (powerup.died) { theWorld.powerups.Remove(powerup.power); }
                 }
+
+                /*for (int i = 0; i < theWorld.powerups.Count; i++)
+                {
+                    if (theWorld.powerups[i].died)
+                    {
+                        theWorld.powerups.Remove(theWorld.powerups[i].power);
+                    }
+                }*/
+
 
                 Networking.Send(client.TheSocket, worldData.ToString());
             }
@@ -466,7 +477,6 @@ namespace Server
                         snake.growing = true;
                         snake.score++;
                         growingSnakes.Add(snake);
-                        theWorld.powerups.Remove(powerup.power);
                         return;
                     }
                 }
@@ -476,6 +486,7 @@ namespace Server
         private static void RespawnSnake(Snake snake) 
         {
             snake.alive = true;
+            snake.score = 0;
 
             // Set random direction
             switch (new Random().Next(4))
