@@ -382,18 +382,26 @@ namespace Server
                 snake.body[0] += tailDir * theWorld.snakeSpeed;
             }
 
-            // TODO: Check for collisions with self
-            SelfCollisionCheck(snake);
+            // Check for collisions with self
+            if (SelfCollisionCheck(snake))
+            {
+                snake.alive = false;
+                snake.died = true;
+                deadSnakes.Add(snake);
+                return;
+            }
 
-            // TODO: Check for collisions with other snakes
+            // Check for collisions with other snakes
+            if (SnakeCollisionCheck(snake))
+            {
+                snake.alive = false;
+                snake.died = true;
+                deadSnakes.Add(snake);
+                return;
+            }
 
             //TODO: Implement wraparound
             WrapAround(snake);
-            /*if (snake.body[snake.body.Count - 1].GetX() > theWorld.Size / 2)
-            {
-                snake.body[snake.body.Count - 1] = new Vector2D(snake.body[snake.body.Count - 1].GetX() - theWorld.Size, snake.body[snake.body.Count - 1].GetY());
-                snake.body.Add(snake.body[snake.body.Count - 1]);
-            }*/
         }
         private static void ProcessMovement(int ID) 
         {
@@ -529,6 +537,13 @@ namespace Server
 
         private static bool SelfCollisionCheck(Snake snake) 
         {
+            // TODO: self collisions
+            return false;
+        }
+
+        private static bool SnakeCollisionCheck(Snake snake)
+        {
+            // TODO: snake collisions
             return false;
         }
 
@@ -539,13 +554,16 @@ namespace Server
             {
                 List<Vector2D> body = new()
                 {
-                new Vector2D(-theWorld.Size / 2, snakeHead.GetY()),
-                new Vector2D(-theWorld.Size / 2, snakeHead.GetY())
+                    new Vector2D(-theWorld.Size / 2, snakeHead.GetY()),
+                    new Vector2D(-theWorld.Size / 2, snakeHead.GetY())
                 };
                 Snake playerSnake = new(snake.snake, snake.name, body, snake.dir, 0, false, true, false, true);
                 playerSnake.growing = true;
 
-
+                lock (theWorld)
+                {
+                    theWorld.snakes.Add(playerSnake.snake, playerSnake);
+                }
             }
         }
 
