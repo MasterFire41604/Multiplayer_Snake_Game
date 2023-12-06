@@ -21,6 +21,7 @@ namespace Server
         private static Dictionary<long, string> commands = new();
         private static List<Snake> deadSnakes = new();
         private static List<Snake> growingSnakes = new();
+        private static int powerRespawnFrames = 0;
 
         static void Main (string[] args)
         {
@@ -296,6 +297,17 @@ namespace Server
                     }
                 }
 
+                if (theWorld.powerups.Count < theWorld.maxPower)
+                {
+                    powerRespawnFrames++;
+
+                    if (powerRespawnFrames >= theWorld.powerDelay)
+                    {
+                        powerRespawnFrames = 0;
+                        CreateInitialPowerups(theWorld.maxPower - theWorld.powerups.Count);
+                    }
+                }
+
 
                 ProcessMovement((int)client.ID);
                 if (clientSnake.alive) { MoveSnake(clientSnake); }
@@ -309,16 +321,17 @@ namespace Server
                 foreach (Powerup powerup in theWorld.powerups.Values)
                 {
                     worldData.Append(JsonSerializer.Serialize(powerup) + "\n");
-                    if (powerup.died) { theWorld.powerups.Remove(powerup.power); }
+                    if (powerup.died)
+                        theWorld.powerups.Remove(powerup.power);
                 }
 
-                /*for (int i = 0; i < theWorld.powerups.Count; i++)
-                {
-                    if (theWorld.powerups[i].died)
-                    {
-                        theWorld.powerups.Remove(theWorld.powerups[i].power);
-                    }
-                }*/
+                //for (int i = 0; i < theWorld.powerups.Count; i++)
+                //{
+                //    if (theWorld.powerups.ContainsKey(i) && theWorld.powerups[i].died)
+                //    {
+                //        theWorld.powerups.Remove(theWorld.powerups[i].power);
+                //    }
+                //}
 
 
                 Networking.Send(client.TheSocket, worldData.ToString());
@@ -406,8 +419,13 @@ namespace Server
 
         private static void CreateInitialPowerups(int powerCount)
         {
-            for (int i = 0; i < powerCount; i++)
+            for (int i = theWorld.powerups.Count; i < powerCount; i++)
             {
+                while (theWorld.powerups.ContainsKey(i))
+                {
+                    i++;
+                }
+
                 Vector2D loc = new
                     (new Random().Next((int)-theWorld.Size / 2, (int)theWorld.Size / 2),
                     new Random().Next((int)-theWorld.Size / 2, (int)theWorld.Size / 2));
