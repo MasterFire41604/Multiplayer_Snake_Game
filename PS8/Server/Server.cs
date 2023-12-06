@@ -63,7 +63,6 @@ namespace Server
             // Process information from settings
             XmlNode worldSize = doc.DocumentElement!.SelectSingleNode("/GameSettings/UniverseSize")!;
             XmlNode respawnRate = doc.DocumentElement!.SelectSingleNode("/GameSettings/RespawnRate")!;
-
             theWorld = new(double.Parse(worldSize.InnerText), -1);
             theWorld.respawnRate = int.Parse(respawnRate.InnerText);
 
@@ -255,87 +254,99 @@ namespace Server
         {
             lock (clients!)
             {
-                foreach (SocketState client in clients!.Values)
+                lock (theWorld)
                 {
-                    StringBuilder worldData = new();
-                    theWorld!.PlayerID = (int)client.ID;
-                    Snake clientSnake = theWorld.snakes[(int)client.ID];
 
 
-                    // Respawn dead snake after respawnRate frames
-                    foreach (Snake snake in deadSnakes)
+                    foreach (SocketState client in clients!.Values)
                     {
-                        snake.died = false;
-                        snake.framesDead++;
-                        if (snake.framesDead >= theWorld.respawnRate)
+                        StringBuilder worldData = new();
+                        theWorld!.PlayerID = (int)client.ID;
+                        Snake clientSnake = theWorld.snakes[(int)client.ID];
+
+
+                        // Respawn dead snake after respawnRate frames
+                        //foreach (Snake snake in deadSnakes)
+                        //{
+                        if (deadSnakes.Contains(clientSnake)) 
                         {
-                            RespawnSnake(snake);
-                            snake.framesDead = 0;
+                            clientSnake.died = false;
+                            clientSnake.framesDead++;
+                            if (clientSnake.framesDead >= theWorld.respawnRate)
+                            {
+                                RespawnSnake(clientSnake);
+                                clientSnake.framesDead = 0;
 
+                            }
                         }
-                    }
-                    for (int i = 0; i < deadSnakes.Count; i++)
-                    {
-                        if (deadSnakes[i].alive)
+                            
+                        //}
+                        for (int i = 0; i < deadSnakes.Count; i++)
                         {
-                            deadSnakes.Remove(deadSnakes[i]);
+                            if (deadSnakes[i].alive)
+                            {
+                                deadSnakes.Remove(deadSnakes[i]);
+                            }
                         }
-                    }
 
-                    // Move tail after snakeGrowth frames
-                    foreach (Snake snake in growingSnakes)
-                    {
-                        snake.framesGrowing--;
-                        if (snake.framesGrowing <= 0)
+                        // Move tail after snakeGrowth frames
+                        //foreach (Snake snake in growingSnakes)
+                        //{
+                        if (growingSnakes.Contains(clientSnake))
                         {
-                            snake.growing = false;
+                            clientSnake.framesGrowing--;
+                            if (clientSnake.framesGrowing <= 0)
+                            {
+                                clientSnake.growing = false;
+                            }
                         }
-                    }
-                    for (int i = 0; i < growingSnakes.Count; i++)
-                    {
-                        if (!growingSnakes[i].growing)
+                        //}
+                        for (int i = 0; i < growingSnakes.Count; i++)
                         {
-                            growingSnakes.Remove(growingSnakes[i]);
+                            if (!growingSnakes[i].growing)
+                            {
+                                growingSnakes.Remove(growingSnakes[i]);
+                            }
                         }
-                    }
 
-                    if (theWorld.powerups.Count < theWorld.maxPower)
-                    {
-                        powerRespawnFrames++;
-
-                        if (powerRespawnFrames >= theWorld.powerDelay)
+                        if (theWorld.powerups.Count < theWorld.maxPower)
                         {
-                            powerRespawnFrames = 0;
-                            CreateInitialPowerups(theWorld.maxPower - theWorld.powerups.Count);
+                            powerRespawnFrames++;
+
+                            if (powerRespawnFrames >= theWorld.powerDelay)
+                            {
+                                powerRespawnFrames = 0;
+                                CreateInitialPowerups(theWorld.maxPower - theWorld.powerups.Count);
+                            }
                         }
+
+
+                        ProcessMovement((int)client.ID);
+                        if (clientSnake.alive) { MoveSnake(clientSnake); }
+
+
+                        foreach (Snake snake in theWorld.snakes.Values)
+                        {
+                            worldData.Append(JsonSerializer.Serialize(snake) + "\n");
+                        }
+
+                        foreach (Powerup powerup in theWorld.powerups.Values)
+                        {
+                            worldData.Append(JsonSerializer.Serialize(powerup) + "\n");
+                            //if (powerup.died)
+                            //    theWorld.powerups.Remove(powerup.power);
+                        }
+
+                        Networking.Send(client.TheSocket, worldData.ToString());
                     }
-
-
-                    ProcessMovement((int)client.ID);
-                    if (clientSnake.alive) { MoveSnake(clientSnake); }
-
-
-                    foreach (Snake snake in theWorld.snakes.Values)
-                    {
-                        worldData.Append(JsonSerializer.Serialize(snake) + "\n");
-                    }
-
-                    foreach (Powerup powerup in theWorld.powerups.Values)
-                    {
-                        worldData.Append(JsonSerializer.Serialize(powerup) + "\n");
-                        //if (powerup.died)
-                        //    theWorld.powerups.Remove(powerup.power);
-                    }
-
-                    Networking.Send(client.TheSocket, worldData.ToString());
                 }
-            }
 
-            foreach (Powerup power in theWorld.powerups.Values)
-            {
-                if (power.died)
+                foreach (Powerup power in theWorld.powerups.Values)
                 {
-                    theWorld.powerups.Remove(power.power);
+                    if (power.died)
+                    {
+                        theWorld.powerups.Remove(power.power);
+                    }
                 }
             }
         }
@@ -371,7 +382,13 @@ namespace Server
                 snake.body[0] += tailDir * theWorld.snakeSpeed;
             }
 
+            // TODO: Check for collisions with self
+            SelfCollisionCheck(snake);
+
+            // TODO: Check for collisions with other snakes
+
             //TODO: Implement wraparound
+            WrapAround(snake);
             /*if (snake.body[snake.body.Count - 1].GetX() > theWorld.Size / 2)
             {
                 snake.body[snake.body.Count - 1] = new Vector2D(snake.body[snake.body.Count - 1].GetX() - theWorld.Size, snake.body[snake.body.Count - 1].GetY());
@@ -438,7 +455,10 @@ namespace Server
                     continue;
                 }
 
-                theWorld.powerups.Add(i, new(i, loc, false));
+                lock (theWorld)
+                {
+                    theWorld.powerups.Add(i, new(i, loc, false));
+                }
             }
         }
 
@@ -504,6 +524,28 @@ namespace Server
                         return;
                     }
                 }
+            }
+        }
+
+        private static bool SelfCollisionCheck(Snake snake) 
+        {
+            return false;
+        }
+
+        private static void WrapAround(Snake snake) 
+        {
+            Vector2D snakeHead = snake.body[snake.body.Count - 1];
+            if (snakeHead.GetX() > theWorld.Size / 2)
+            {
+                List<Vector2D> body = new()
+                {
+                new Vector2D(-theWorld.Size / 2, snakeHead.GetY()),
+                new Vector2D(-theWorld.Size / 2, snakeHead.GetY())
+                };
+                Snake playerSnake = new(snake.snake, snake.name, body, snake.dir, 0, false, true, false, true);
+                playerSnake.growing = true;
+
+
             }
         }
 
