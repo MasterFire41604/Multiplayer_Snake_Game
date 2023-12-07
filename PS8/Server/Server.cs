@@ -1,4 +1,9 @@
-﻿using System.Net;
+﻿// Authors: Isaac Anderson, Ryan Beard, Fall 2023
+// Solution for CS3500 PS9 - Snake Server
+// University of Utah
+
+
+using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using NetworkUtil;
