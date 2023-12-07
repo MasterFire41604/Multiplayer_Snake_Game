@@ -10,6 +10,15 @@ namespace Model
     /// </summary>
     public class Snake
     {
+        // Boolean for whether the snake can boost
+        [JsonIgnore]
+        public bool canBoost;
+        // Current amount of frames between each boost
+        [JsonIgnore]
+        public int boostStallFrames;
+        // Amount of frames a snake is boosting
+        [JsonIgnore]
+        public int boostingTimeFrames;
         // Boolean for whether the snake is growing or not
         [JsonIgnore]
         public bool growing;
@@ -74,6 +83,9 @@ namespace Model
             framesDead = 0;
             framesGrowing = 0;
             growing = false;
+            boostStallFrames = 0;
+            boostingTimeFrames = 0;
+            canBoost = true;
         }
     }
 }

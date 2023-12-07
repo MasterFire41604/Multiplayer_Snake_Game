@@ -21,6 +21,11 @@ namespace Model
         public int maxPower;
         // Max powerup delay
         public int powerDelay;
+        // How many frames between each snake boost
+        public int boostStall;
+        // How many frames each snake can boost
+        public int boostingTime;
+
         // A dictionary of active snakes, relating the snake's ID to the snake object
         [JsonInclude]
         public Dictionary<int, Snake> snakes;
@@ -46,6 +51,8 @@ namespace Model
             maxPower = 20;
             powerDelay = 75;
             respawnRate = 100;
+            boostStall = 250;
+            boostingTime = 40;
 
             snakes = new Dictionary<int, Snake>();
             powerups = new Dictionary<int, Powerup>();
