@@ -41,7 +41,7 @@ namespace Server
             watch.Start();
 
             XmlDocument doc = new();
-            doc.Load("settings.xml");
+            doc.Load("../../../settings.xml");
 
 
             XmlNode MSPerFrameDoc = doc.DocumentElement!.SelectSingleNode("/GameSettings/MSPerFrame")!;
@@ -67,7 +67,7 @@ namespace Server
 
             clients = new Dictionary<long, SocketState>();
 
-            doc.Load("settings.xml");
+            doc.Load("../../../settings.xml");
 
             // Process information from settings
             XmlNode worldSize = doc.DocumentElement!.SelectSingleNode("/GameSettings/UniverseSize")!;
