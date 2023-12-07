@@ -77,10 +77,13 @@ namespace Server
 
             // See whether the settings contains basic or extra mode
             XmlNode mode = doc.DocumentElement!.SelectSingleNode("/GameSettings/Mode")!;
-            if (mode.InnerText.ToLower() == "basic")
-                extraModeEnabled = false;
-            if (mode.InnerText.ToLower() == "extra")
-                extraModeEnabled = true;
+            if (mode != null) 
+            {
+                if (mode.InnerText.ToLower() == "basic")
+                    extraModeEnabled = false;
+                if (mode.InnerText.ToLower() == "extra")
+                    extraModeEnabled = true;
+            }
 
 
             LoadWalls(doc);
