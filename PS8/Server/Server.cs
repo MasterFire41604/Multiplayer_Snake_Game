@@ -21,7 +21,8 @@ namespace Server
         private static Dictionary<long, string> commands = new();
         private static Dictionary<int, Snake> deadSnakes = new();
         private static List<Snake> growingSnakes = new();
-        private static int powerRespawnFrames = 0;
+        private static int powerRespawnFrames = 0, tailShrinkFrames = 0;
+
 
         static void Main (string[] args)
         {
@@ -277,7 +278,18 @@ namespace Server
                         //if (deadSnakes.ContainsKey(clientSnake.snake)) { clientSnake.died = false; }
 
                         ProcessMovement((int)client.ID);
-                        if (clientSnake.alive) { MoveSnake(clientSnake); }
+                        if (clientSnake.alive)
+                        {
+                            if (tailShrinkFrames <= 0)
+                            {
+                                MoveSnake(clientSnake);
+                            }
+                            else
+                            {
+                                tailShrinkFrames--;
+                                MoveSnake(clientSnake, 2);
+                            }
+                        }
 
 
                         // Respawn dead snake after respawnRate frames
@@ -384,7 +396,7 @@ namespace Server
             }
         }
 
-        private static void MoveSnake(Snake snake)
+        private static void MoveSnake(Snake snake, int increaseSpeed = 1)
         {
             // Move head
             snake.body[snake.body.Count - 1] += snake.dir * theWorld.snakeSpeed;
@@ -401,18 +413,27 @@ namespace Server
 
             if (!snake.growing)
             {
-                // Move tail
-                Vector2D tailDir = (snake.body[1] - snake.body[0]);
-                // Check if tail is at next vertex
-                if (tailDir.GetX() == 0 && tailDir.GetY() == 0)
+                for (int i = 0; i < increaseSpeed; i++)
                 {
-                    snake.body.RemoveAt(0);
-                    tailDir = (snake.body[1] - snake.body[0]);
-                    tailDir.Normalize();
-                }
-                else { tailDir.Normalize(); }
+                    // Move tail
+                    Vector2D tailDir = (snake.body[1] - snake.body[0]);
+                    // Check if tail is at next vertex
+                    if (Math.Abs(tailDir.GetX()) == 0 && Math.Abs(tailDir.GetY()) == 0)
+                    {
+                        if (snake.body[1] == snake.body[snake.body.Count - 1])
+                        {
+                            KillSnake(snake);
+                            return;
+                        }
 
-                snake.body[0] += tailDir * theWorld.snakeSpeed;
+                        snake.body.RemoveAt(0);
+                        tailDir = (snake.body[1] - snake.body[0]);
+                        tailDir.Normalize();
+                    }
+                    else { tailDir.Normalize(); }
+
+                    snake.body[0] += tailDir * theWorld.snakeSpeed;
+                }
             }
 
             // Check for collisions with self
@@ -568,10 +589,22 @@ namespace Server
                         if (snakeHead.GetY() < powerup.loc.GetY() + 10 && snakeHead.GetY() > powerup.loc.GetY() - 10)
                         {
                             powerup.died = true;
-                            snake.growing = true;
-                            snake.framesGrowing += theWorld.snakeGrowth;
-                            snake.score++;
-                            growingSnakes.Add(snake);
+
+                            int randPoisonChance = new Random().Next(10);
+
+                            if (randPoisonChance > 2)
+                            {
+                                growingSnakes.Add(snake);
+                                snake.growing = true;
+                                snake.framesGrowing += theWorld.snakeGrowth;
+                                snake.score++;
+                            }
+                            else
+                            {
+                                tailShrinkFrames += theWorld.snakeGrowth;
+                                snake.score++;
+                            }
+
                             return;
                         }
                     }
