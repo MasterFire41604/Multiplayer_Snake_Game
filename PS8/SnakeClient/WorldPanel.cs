@@ -242,6 +242,7 @@ public class WorldPanel : IDrawable
                     snakeSpeeds.Remove(snake.snake);
                     snake.alive = false;
                     theWorld.snakes.Remove(snake.snake);
+                    continue;
                 }
 
                 float snakeX = (float)snake.body[snake.body.Count - 1].GetX();
