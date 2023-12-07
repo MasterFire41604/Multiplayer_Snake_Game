@@ -28,6 +28,7 @@ namespace Server
         private static List<Snake> growingSnakes = new();
         private static List<Snake> boostingSnakes = new();
         private static int powerRespawnFrames = 0;
+        private static bool extraModeEnabled = false;
         // TODO: private static int tailShrinkFrames = 0;
 
 
@@ -73,6 +74,14 @@ namespace Server
             XmlNode respawnRate = doc.DocumentElement!.SelectSingleNode("/GameSettings/RespawnRate")!;
             theWorld = new(double.Parse(worldSize.InnerText), -1);
             theWorld.respawnRate = int.Parse(respawnRate.InnerText);
+
+            // See whether the settings contains basic or extra mode
+            XmlNode mode = doc.DocumentElement!.SelectSingleNode("/GameSettings/Mode")!;
+            if (mode.InnerText.ToLower() == "basic")
+                extraModeEnabled = false;
+            if (mode.InnerText.ToLower() == "extra")
+                extraModeEnabled = true;
+
 
             LoadWalls(doc);
             CreateInitialPowerups(theWorld.maxPower);
@@ -293,7 +302,7 @@ namespace Server
 
                         if (clientSnake.alive)
                         {
-                            if (boostingSnakes.Contains(clientSnake))
+                            if (extraModeEnabled && boostingSnakes.Contains(clientSnake))
                             {
                                 if (clientSnake.boostingTimeFrames > theWorld.boostingTime)
                                 {
@@ -304,7 +313,7 @@ namespace Server
                                 else
                                 {
                                     clientSnake.boostingTimeFrames++;
-                                    MoveSnake(clientSnake);
+                                    MoveSnake(clientSnake, false);
                                 }
                             }
 
@@ -394,7 +403,7 @@ namespace Server
             }
         }
 
-        private static void MoveSnake(Snake snake)
+        private static void MoveSnake(Snake snake, bool killSnake = true)
         {
             // Move head
             snake.body[snake.body.Count - 1] += snake.dir * theWorld.snakeSpeed;
@@ -402,7 +411,8 @@ namespace Server
             // Check for collisions with walls
             if (WallCollisionCheck(snake.body[snake.body.Count - 1], 0))
             {
-                KillSnake(snake);
+                if (killSnake)
+                    KillSnake(snake);
                 return;
             }
 
@@ -440,14 +450,16 @@ namespace Server
             // Check for collisions with self
             if (SelfCollisionCheck(snake))
             {
-                KillSnake(snake);
+                if (killSnake)
+                    KillSnake(snake);
                 return;
             }
 
             // Check for collisions with other snakes
             if (SnakeCollisionCheck(snake))
             {
-                KillSnake(snake);
+                if (killSnake)
+                    KillSnake(snake);
                 return;
             }
 
@@ -773,8 +785,15 @@ namespace Server
         }
         private static void RespawnSnake(Snake snake)
         {
+            // Reset state
             snake.alive = true;
             snake.score = 0;
+            snake.boostingTimeFrames = 0;
+            snake.boostStallFrames = 0;
+            snake.canBoost = true;
+            if (boostingSnakes.Contains(snake))
+                boostingSnakes.Remove(snake);
+
 
             // Set random direction
             switch (new Random().Next(4))
