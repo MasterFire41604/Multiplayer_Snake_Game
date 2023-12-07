@@ -26,7 +26,8 @@ namespace Server
         private static Dictionary<long, string> commands = new();
         private static Dictionary<int, Snake> deadSnakes = new();
         private static List<Snake> growingSnakes = new();
-        private static int powerRespawnFrames = 0, tailShrinkFrames = 0;
+        private static int powerRespawnFrames = 0;
+        // TODO: private static int tailShrinkFrames = 0;
 
 
         static void Main (string[] args)
@@ -285,7 +286,9 @@ namespace Server
                         ProcessMovement((int)client.ID);
                         if (clientSnake.alive)
                         {
-                            if (tailShrinkFrames <= 0)
+                            MoveSnake(clientSnake);
+                            // TODO: Decide whether to keep
+                            /*if (tailShrinkFrames <= 0)
                             {
                                 MoveSnake(clientSnake);
                             }
@@ -293,7 +296,7 @@ namespace Server
                             {
                                 tailShrinkFrames--;
                                 MoveSnake(clientSnake, 2);
-                            }
+                            }*/
                         }
 
 
@@ -401,7 +404,7 @@ namespace Server
             }
         }
 
-        private static void MoveSnake(Snake snake, int increaseSpeed = 1)
+        private static void MoveSnake(Snake snake/*, int increaseSpeed = 1*/)
         {
             // Move head
             snake.body[snake.body.Count - 1] += snake.dir * theWorld.snakeSpeed;
@@ -418,27 +421,40 @@ namespace Server
 
             if (!snake.growing)
             {
-                for (int i = 0; i < increaseSpeed; i++)
+                // TODO: Decide whether to keep
+                /*for (int i = 0; i < increaseSpeed; i++)
+                {*/
+                // Move tail
+                Vector2D tailDir = (snake.body[1] - snake.body[0]);
+                // Check if tail is at next vertex
+                if (tailDir.GetX() == 0 && tailDir.GetY() == 0)
                 {
-                    // Move tail
-                    Vector2D tailDir = (snake.body[1] - snake.body[0]);
-                    // Check if tail is at next vertex
-                    if (Math.Abs(tailDir.GetX()) == 0 && Math.Abs(tailDir.GetY()) == 0)
+                    /*if (snake.body[1] == snake.body[snake.body.Count - 1])
                     {
-                        if (snake.body[1] == snake.body[snake.body.Count - 1])
-                        {
-                            KillSnake(snake);
-                            return;
-                        }
+                        KillSnake(snake);
+                        return;
+                    }*/
 
+                    if (Math.Abs(snake.body[0].GetX()) > theWorld.Size / 2 || Math.Abs(snake.body[0].GetY()) > theWorld.Size / 2)
+                    {
+                        // Remove tail and temporary vertex
                         snake.body.RemoveAt(0);
+                        snake.body.RemoveAt(0);
+
                         tailDir = (snake.body[1] - snake.body[0]);
                         tailDir.Normalize();
+                        return;
+                        //break;
                     }
-                    else { tailDir.Normalize(); }
 
-                    snake.body[0] += tailDir * theWorld.snakeSpeed;
+                    snake.body.RemoveAt(0);
+                    tailDir = (snake.body[1] - snake.body[0]);
+                    tailDir.Normalize();
                 }
+                else { tailDir.Normalize(); }
+
+                snake.body[0] += tailDir * theWorld.snakeSpeed;
+                /*}*/
             }
 
             // Check for collisions with self
@@ -548,7 +564,7 @@ namespace Server
                     int.Parse(element.SelectSingleNode("p2/y")!.InnerText));
 
                 Wall wall = new(wallID, p1, p2);
-                theWorld.walls.Add(wallID, wall);
+                //theWorld.walls.Add(wallID, wall);
             }
 
         }
@@ -595,20 +611,21 @@ namespace Server
                         {
                             powerup.died = true;
 
-                            int randPoisonChance = new Random().Next(10);
+                            //int randPoisonChance = new Random().Next(10);
 
-                            if (randPoisonChance > 2)
-                            {
-                                growingSnakes.Add(snake);
-                                snake.growing = true;
-                                snake.framesGrowing += theWorld.snakeGrowth;
-                                snake.score++;
-                            }
-                            else
+                            // TODO: Remove?
+                            /* if (randPoisonChance > 2)
+                            {*/
+                            growingSnakes.Add(snake);
+                            snake.growing = true;
+                            snake.framesGrowing += theWorld.snakeGrowth;
+                            snake.score++;
+                            /*}*/
+                            /*else
                             {
                                 tailShrinkFrames += theWorld.snakeGrowth;
                                 snake.score++;
-                            }
+                            }*/
 
                             return;
                         }
@@ -646,12 +663,18 @@ namespace Server
                 Vector2D p1 = snake.body[i];
                 Vector2D p2 = snake.body[i - 1];
 
+
                 if (p1.GetX() > p2.GetX() || p1.GetY() > p2.GetY())
                 {
                     p1 = snake.body[i - 1];
                     p2 = snake.body[i];
                 }
 
+                // Check if we are colliding with an imaginary segment
+                if (Math.Abs((p1 - p2).GetX()) > theWorld.Size || Math.Abs((p1 - p2).GetY()) > theWorld.Size)
+                {
+                    continue;
+                }
 
                 if (snakeHead.GetX() > p1.GetX() - 10 && snakeHead.GetX() < p2.GetX() + 10) 
                 {
@@ -703,18 +726,31 @@ namespace Server
             Vector2D snakeHead = snake.body[snake.body.Count - 1];
             if (snakeHead.GetX() > theWorld.Size / 2)
             {
-                List<Vector2D> body = new()
-                {
-                    new Vector2D(-theWorld.Size / 2, snakeHead.GetY()),
-                    new Vector2D(-theWorld.Size / 2, snakeHead.GetY())
-                };
-                Snake playerSnake = new(snake.snake, snake.name, body, snake.dir, 0, false, true, false, true);
-                playerSnake.growing = true;
+                Vector2D newSnakeHead = new(-theWorld.Size / 2, snakeHead.GetY());
+                snake.body.Add(new Vector2D(newSnakeHead.GetX(), newSnakeHead.GetY()));
+                snake.body.Add(newSnakeHead);
 
-                lock (theWorld)
-                {
-                    theWorld.snakes.Add(playerSnake.snake, playerSnake);
-                }
+            }
+            else if (snakeHead.GetX() < -theWorld.Size / 2)
+            {
+                Vector2D newSnakeHead = new(theWorld.Size / 2, snakeHead.GetY());
+                snake.body.Add(new Vector2D(newSnakeHead.GetX(), newSnakeHead.GetY()));
+                snake.body.Add(newSnakeHead);
+
+            }
+            else if (snakeHead.GetY() > theWorld.Size / 2)
+            {
+                Vector2D newSnakeHead = new(snakeHead.GetX(), -theWorld.Size / 2);
+                snake.body.Add(new Vector2D(newSnakeHead.GetX(), newSnakeHead.GetY()));
+                snake.body.Add(newSnakeHead);
+
+            }
+            else if (snakeHead.GetY() < -theWorld.Size / 2)
+            {
+                Vector2D newSnakeHead = new(snakeHead.GetX(), theWorld.Size / 2);
+                snake.body.Add(new Vector2D(newSnakeHead.GetX(), newSnakeHead.GetY()));
+                snake.body.Add(newSnakeHead);
+
             }
         }
 
