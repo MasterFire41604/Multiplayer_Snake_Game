@@ -232,6 +232,10 @@ public class WorldPanel : IDrawable
             // Draw snakes
             foreach (Snake snake in theWorld.snakes.Values)
             {
+                
+                float snakeX = (float)snake.body[snake.body.Count - 1].GetX();
+                float snakeY = (float)snake.body[snake.body.Count - 1].GetY();
+
                 if (snake.died)
                 {
                     if (snakeSpeeds.ContainsKey(snake.snake)) { snakeSpeeds[snake.snake] = 0; }
@@ -245,8 +249,6 @@ public class WorldPanel : IDrawable
                     continue;
                 }
 
-                float snakeX = (float)snake.body[snake.body.Count - 1].GetX();
-                float snakeY = (float)snake.body[snake.body.Count - 1].GetY();
                 if (snake.alive)
                 {
                     Vector2D lastSegment = null;
@@ -267,7 +269,7 @@ public class WorldPanel : IDrawable
                     canvas.DrawString(snake.name + ": " + snake.score, snakeX, snakeY - 25, HorizontalAlignment.Center);
                 }
                 else
-                {
+                { 
                     // Draw particles when the snake dies
                     if (snakeSpeeds.ContainsKey(snake.snake))
                     {

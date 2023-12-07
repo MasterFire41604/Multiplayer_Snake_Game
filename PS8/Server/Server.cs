@@ -267,108 +267,114 @@ namespace Server
                 lock (theWorld)
                 {
 
+                    StringBuilder worldData = new();
+                    foreach (Snake snake in theWorld.snakes.Values)
+                    {
+                        worldData.Append(JsonSerializer.Serialize(snake) + "\n");
+                    }
+
+                    foreach (Powerup powerup in theWorld.powerups.Values)
+                    {
+                        worldData.Append(JsonSerializer.Serialize(powerup) + "\n");
+                        //if (powerup.died)
+                        //    theWorld.powerups.Remove(powerup.power);
+                    }
+
+                    foreach (Powerup power in theWorld.powerups.Values)
+                    {
+                        if (power.died)
+                        {
+                            theWorld.powerups.Remove(power.power);
+                        }
+                    }
+
+
+
                     foreach (SocketState client in clients!.Values)
                     {
-                        StringBuilder worldData = new();
 
-                        if (theWorld.snakes.ContainsKey((int)client.ID))
+                        /*if (theWorld.snakes.ContainsKey((int)client.ID))
+                        {*/
+                        Snake clientSnake = theWorld.snakes[(int)client.ID];
+                        clientSnake.died = false;
+
+                        //if (deadSnakes.ContainsKey(clientSnake.snake)) { clientSnake.died = false; }
+
+                        ProcessMovement((int)client.ID);
+                        if (clientSnake.alive) { MoveSnake(clientSnake); }
+
+
+                        // Respawn dead snake after respawnRate frames
+                        if (deadSnakes.ContainsKey(clientSnake.snake))
                         {
-                            Snake clientSnake = theWorld.snakes[(int)client.ID];
-
-                            //for (int i = 0; i < deadSnakes.Count; i++)
-                            foreach (Snake snake in deadSnakes.Values)
+                            clientSnake.framesDead++;
+                            if (clientSnake.framesDead >= theWorld.respawnRate)
                             {
-                                if (snake.alive)
-                                {
-                                    deadSnakes.Remove(snake.snake);
-                                }
+                                RespawnSnake(clientSnake);
+                                clientSnake.framesDead = 0;
+
                             }
+                        }
 
-                            // Respawn dead snake after respawnRate frames
-                            /*if (deadSnakes.Contains(clientSnake))
+                        // Move tail after snakeGrowth frames
+                        //foreach (Snake snake in growingSnakes)
+                        //{
+                        if (growingSnakes.Contains(clientSnake))
+                        {
+                            clientSnake.framesGrowing--;
+                            if (clientSnake.framesGrowing <= 0)
                             {
-                                clientSnake.died = false;
-                                clientSnake.framesDead++;
-                                if (clientSnake.framesDead >= theWorld.respawnRate)
-                                {
-                                    RespawnSnake(clientSnake);
-                                    clientSnake.framesDead = 0;
-
-                                }
-                            }*/
-
-                            // Move tail after snakeGrowth frames
-                            //foreach (Snake snake in growingSnakes)
-                            //{
-                            if (growingSnakes.Contains(clientSnake))
-                            {
-                                clientSnake.framesGrowing--;
-                                if (clientSnake.framesGrowing <= 0)
-                                {
-                                    clientSnake.growing = false;
-                                }
+                                clientSnake.growing = false;
                             }
-                            //}
-                            for (int i = 0; i < growingSnakes.Count; i++)
+                        }
+                        //}
+                        for (int i = 0; i < growingSnakes.Count; i++)
+                        {
+                            if (!growingSnakes[i].growing)
                             {
-                                if (!growingSnakes[i].growing)
-                                {
-                                    growingSnakes.Remove(growingSnakes[i]);
-                                }
+                                growingSnakes.Remove(growingSnakes[i]);
                             }
+                        }
 
-                            if (theWorld.powerups.Count < theWorld.maxPower)
+                        
+                        if (theWorld.powerups.Count < theWorld.maxPower)
+                        {
+                            powerRespawnFrames++;
+
+                            if (powerRespawnFrames >= theWorld.powerDelay)
                             {
-                                powerRespawnFrames++;
-
-                                if (powerRespawnFrames >= theWorld.powerDelay)
-                                {
-                                    powerRespawnFrames = 0;
-                                    CreateInitialPowerups(theWorld.maxPower - theWorld.powerups.Count);
-                                }
+                                powerRespawnFrames = 0;
+                                CreateInitialPowerups(theWorld.maxPower - theWorld.powerups.Count);
                             }
-
-
-                            ProcessMovement((int)client.ID);
-                            if (clientSnake.alive) { MoveSnake(clientSnake); }
-
                         }
 
 
-                        foreach (Snake snake in theWorld.snakes.Values)
-                        {
-                            worldData.Append(JsonSerializer.Serialize(snake) + "\n");
-                        }
 
-                        foreach (Powerup powerup in theWorld.powerups.Values)
-                        {
-                            worldData.Append(JsonSerializer.Serialize(powerup) + "\n");
-                            //if (powerup.died)
-                            //    theWorld.powerups.Remove(powerup.power);
-                        }
 
                         Networking.Send(client.TheSocket, worldData.ToString());
-                    }
-                }
 
-                foreach (Powerup power in theWorld.powerups.Values)
-                {
-                    if (power.died)
+                        
+                    }
+
+                    //for (int i = 0; i < deadSnakes.Count; i++)
+                    foreach (Snake snake in deadSnakes.Values)
                     {
-                        theWorld.powerups.Remove(power.power);
+                        if (snake.alive)
+                        {
+                            deadSnakes.Remove(snake.snake);
+                        }
                     }
-                }
-
-                foreach (Snake snake in theWorld.snakes.Values)
+                    
+                /*foreach (Snake snake in theWorld.snakes.Values)
                 {
                     if (snake.died)
                     {
                         theWorld.snakes.Remove(snake.snake);
                     }
-                }
+                }*/
 
                 // Respawn dead snake after respawnRate frames
-                foreach (Snake snake in deadSnakes.Values)
+                /*foreach (Snake snake in deadSnakes.Values)
                 {
                     snake.died = false;
                     snake.framesDead++;
@@ -377,6 +383,7 @@ namespace Server
                         RespawnSnake(snake);
                         snake.framesDead = 0;
                     }
+                }*/
                 }
             }
         }
@@ -630,6 +637,7 @@ namespace Server
 
             foreach (Snake snake in theWorld.snakes.Values) 
             {
+                if (!snake.alive) { continue; }
                 if (playerSnake.snake == snake.snake) { continue; }
 
                 for (int i = snake.body.Count - 1; i > 0; i--)
