@@ -266,30 +266,6 @@ namespace Server
             {
                 lock (theWorld)
                 {
-
-                    StringBuilder worldData = new();
-                    foreach (Snake snake in theWorld.snakes.Values)
-                    {
-                        worldData.Append(JsonSerializer.Serialize(snake) + "\n");
-                    }
-
-                    foreach (Powerup powerup in theWorld.powerups.Values)
-                    {
-                        worldData.Append(JsonSerializer.Serialize(powerup) + "\n");
-                        //if (powerup.died)
-                        //    theWorld.powerups.Remove(powerup.power);
-                    }
-
-                    foreach (Powerup power in theWorld.powerups.Values)
-                    {
-                        if (power.died)
-                        {
-                            theWorld.powerups.Remove(power.power);
-                        }
-                    }
-
-
-
                     foreach (SocketState client in clients!.Values)
                     {
 
@@ -336,7 +312,7 @@ namespace Server
                             }
                         }
 
-                        
+
                         if (theWorld.powerups.Count < theWorld.maxPower)
                         {
                             powerRespawnFrames++;
@@ -347,13 +323,28 @@ namespace Server
                                 CreateInitialPowerups(theWorld.maxPower - theWorld.powerups.Count);
                             }
                         }
+                    }
 
+                    StringBuilder worldData = new();
 
+                    foreach (Snake snake in theWorld.snakes.Values)
+                    {
+                        worldData.Append(JsonSerializer.Serialize(snake) + "\n");
+                    }
 
+                    foreach (Powerup powerup in theWorld.powerups.Values)
+                    {
+                        worldData.Append(JsonSerializer.Serialize(powerup) + "\n");
+                        //if (powerup.died)
+                        //    theWorld.powerups.Remove(powerup.power);
+                    }
 
-                        Networking.Send(client.TheSocket, worldData.ToString());
-
-                        
+                    foreach (Powerup power in theWorld.powerups.Values)
+                    {
+                        if (power.died)
+                        {
+                            theWorld.powerups.Remove(power.power);
+                        }
                     }
 
                     //for (int i = 0; i < deadSnakes.Count; i++)
@@ -363,6 +354,11 @@ namespace Server
                         {
                             deadSnakes.Remove(snake.snake);
                         }
+                    }
+
+                    foreach (SocketState client in clients.Values) 
+                    {
+                        Networking.Send(client.TheSocket, worldData.ToString());
                     }
                     
                 /*foreach (Snake snake in theWorld.snakes.Values)

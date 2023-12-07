@@ -53,7 +53,7 @@ public class WorldPanel : IDrawable
     public void SetWorld(World world, GraphicsView graphicsView)
     {
         this.graphicsView = graphicsView;
-        lock (this) { theWorld = world; }
+        theWorld = world;
     }
 
     private void InitializeDrawing()
@@ -167,7 +167,8 @@ public class WorldPanel : IDrawable
 
     public void Draw(ICanvas canvas, RectF dirtyRect)
     {
-        lock (this)
+        
+        lock (theWorld)
         {
             if (theWorld.snakes.ContainsKey(theWorld.PlayerID))
             {
@@ -232,7 +233,7 @@ public class WorldPanel : IDrawable
             // Draw snakes
             foreach (Snake snake in theWorld.snakes.Values)
             {
-                
+
                 float snakeX = (float)snake.body[snake.body.Count - 1].GetX();
                 float snakeY = (float)snake.body[snake.body.Count - 1].GetY();
 
@@ -269,7 +270,7 @@ public class WorldPanel : IDrawable
                     canvas.DrawString(snake.name + ": " + snake.score, snakeX, snakeY - 25, HorizontalAlignment.Center);
                 }
                 else
-                { 
+                {
                     // Draw particles when the snake dies
                     if (snakeSpeeds.ContainsKey(snake.snake))
                     {
