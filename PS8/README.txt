@@ -1,5 +1,9 @@
 Author: Ryan Beard u1391626
 
+---------------------------------
+PS8
+---------------------------------
+
 
 Networking
 ---------------------------------
@@ -49,3 +53,60 @@ Draws particles for each snake when they die.
 
 Draws powerups in their correct locations, and removes them when a player has picked them up.
 ---------------------------------
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Author: Isaac Anderson u0584604
+
+---------------------------------
+PS9
+---------------------------------
+
+
+Networking
+---------------------------------
+Starts a server that clients can connect to.
+
+When server is started, information is read from the server settings xml file a world object is created.
+
+Server listens and waits for clients to connect.
+
+When the server gets a client connection, it waits to receive a name from the client, and sends world startup info back to them.
+
+After name is received, server waits to receive commands from the client. A receive loop is started.
+
+Repeats process for any new client connection.
+---------------------------------
+
+
+Updating the World
+---------------------------------
+The server waits a certain amount of time (set in the settings file), and then updates the world. This is where the server
+sends the client information on the world, including where their snake is and if it collided with anything. This is the bulk of what
+the server does when a client is connected, constantly updating world data for the client to draw. 
+---------------------------------
+
+
+settings.xml File
+---------------------------------
+Settings that a user can configure for the server are kept in a xml file titled 'settings' that is kept in the Server project folder.
+The server will read from the file from this location. This includes the game mode (more on that below), how many milliseconds should
+be in a frame, the snake respawn rate (in frames), the universe size, and finally positions of walls in the world.
+---------------------------------
+
+
+Extra Features
+---------------------------------
+An extra feature can be enabled through the settings file. To do this, the settings file needs to contain an extra field under GameSettings
+structured as follows: '<Mode>extra</Mode>'. This can contain either 'extra', enabling the extra feature, or 'basic', disabling the feature.
+Not specifying the mode will default the server to have the extra feature disabled.
+
+The extra feature enables the user to be able to 'boost' themselves, doubling their speed for a set amount of frames. This can be done
+once and then has a cooldown, where the user has to wait a set amount of frames before being able to boost again. The delay for boosting
+again and the time spent boosting are both set in the world object.
+
+To boost, the user must hit a direction key when they are already moving that direction. For example, if 'w' was pressed while the user's
+snake was already moving up, their speed would increase for a brief period of time, assuming they didn't just do it.
+---------------------------------
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
