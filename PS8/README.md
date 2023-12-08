@@ -1,5 +1,5 @@
 
-PS8
+PS8 - Client
 ---------------------------------
 Author: Ryan Beard u1391626
 
@@ -53,7 +53,7 @@ Draws powerups in their correct locations, and removes them when a player has pi
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-PS9
+PS9 - Server
 ---------------------------------
 Author: Isaac Anderson u0584604
 
