@@ -635,7 +635,7 @@ namespace Server
         /// </summary>
         /// <param name="doc"></param>
         private static void LoadWalls(XmlDocument doc)
-        { 
+        {
             foreach (XmlElement element in doc.DocumentElement!.SelectSingleNode("/GameSettings/Walls")!)
             {
                 int wallID = int.Parse(element.SelectSingleNode("ID")!.InnerText);

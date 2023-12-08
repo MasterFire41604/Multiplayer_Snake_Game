@@ -261,7 +261,10 @@ public class WorldPanel : IDrawable
                         }
                         else
                         {
-                            DrawSnake(canvas, bodyPart.GetX(), bodyPart.GetY(), lastSegment.GetX(), lastSegment.GetY(), snake.snake);
+                            if (Math.Abs(bodyPart.GetX() - lastSegment.GetX()) <= theWorld.Size && Math.Abs(bodyPart.GetY() - lastSegment.GetY()) <= theWorld.Size)
+                            {
+                                DrawSnake(canvas, bodyPart.GetX(), bodyPart.GetY(), lastSegment.GetX(), lastSegment.GetY(), snake.snake);
+                            }
                             lastSegment = bodyPart;
                         }
                     }
