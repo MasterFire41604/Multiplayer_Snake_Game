@@ -90,7 +90,7 @@ be in a frame, the snake respawn rate (in frames), the universe size, and finall
 Extra Features
 ---------------------------------
 An extra feature can be enabled through the settings file. To do this, the settings file needs to contain an extra field under GameSettings
-structured as follows: '<Mode>extra</Mode>'. This can contain either 'extra', enabling the extra feature, or 'basic', disabling the feature.
+structured as follows: '\<Mode>extra\</Mode>'. This can contain either 'extra', enabling the extra feature, or 'basic', disabling the feature.
 Not specifying the mode will default the server to have the extra feature disabled.
 
 The extra feature enables the user to be able to 'boost' themselves, doubling their speed for a set amount of frames. This can be done
