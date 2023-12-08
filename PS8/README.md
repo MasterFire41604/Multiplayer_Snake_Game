@@ -17,7 +17,6 @@ Alerts the user of anything that doesn't go right. (This includes incorrect serv
 too long of a name, and the inability to connect to the server.)
 
 Receives any data sent to the client, and uses it to create the game world.
----------------------------------
 
 
 Creating the Game World
@@ -32,7 +31,6 @@ Only uses complete pieces of the JSON (the last piece of information sent by the
 After data is finished being validated and saved, removes the sent data to keep it from stacking up infinitely.
 
 Separates each part of the given data into their corresponding parts. (Snake pieces are used to create snakes, Walls to create walls, etc.)
----------------------------------
 
 
 Drawing the Game
@@ -52,7 +50,6 @@ colors depending on their ID. Snakes are rounded to look nicer and more polished
 Draws particles for each snake when they die.
 
 Draws powerups in their correct locations, and removes them when a player has picked them up.
----------------------------------
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -76,7 +73,6 @@ When the server gets a client connection, it waits to receive a name from the cl
 After name is received, server waits to receive commands from the client. A receive loop is started.
 
 Repeats process for any new client connection.
----------------------------------
 
 
 Updating the World
@@ -84,7 +80,6 @@ Updating the World
 The server waits a certain amount of time (set in the settings file), and then updates the world. This is where the server
 sends the client information on the world, including where their snake is and if it collided with anything. This is the bulk of what
 the server does when a client is connected, constantly updating world data for the client to draw. 
----------------------------------
 
 
 settings.xml File
@@ -92,7 +87,6 @@ settings.xml File
 Settings that a user can configure for the server are kept in a xml file titled 'settings' that is kept in the Server project folder.
 The server will read from the file from this location. This includes the game mode (more on that below), how many milliseconds should
 be in a frame, the snake respawn rate (in frames), the universe size, and finally positions of walls in the world.
----------------------------------
 
 
 Extra Features
@@ -107,6 +101,5 @@ again and the time spent boosting are both set in the world object.
 
 To boost, the user must hit a direction key when they are already moving that direction. For example, if 'w' was pressed while the user's
 snake was already moving up, their speed would increase for a brief period of time, assuming they didn't just do it.
----------------------------------
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------
