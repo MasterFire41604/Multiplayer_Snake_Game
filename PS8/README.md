@@ -1,8 +1,7 @@
-Author: Ryan Beard u1391626
 
----------------------------------
 PS8
 ---------------------------------
+Author: Ryan Beard u1391626
 
 
 Networking
@@ -53,11 +52,10 @@ Draws powerups in their correct locations, and removes them when a player has pi
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 
-Author: Isaac Anderson u0584604
 
----------------------------------
 PS9
 ---------------------------------
+Author: Isaac Anderson u0584604
 
 
 Networking
